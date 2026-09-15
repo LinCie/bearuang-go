@@ -9,7 +9,7 @@ type Module struct {
 
 // NewModule creates the products module backed by db.
 func NewModule(db *sqlx.DB) Module {
-	repository := NewPostgresDatabase(db)
+	repository := NewPostgresRepository(db)
 	service := NewService(repository)
 	handler := NewHandler(service)
 

@@ -14,19 +14,16 @@ type Handler struct {
 	service *Service
 }
 
-type productCreateInput struct {
+type productWriteInput struct {
 	Name        string `json:"name" validate:"required"`
 	Slug        string `json:"slug" validate:"required"`
 	Description string `json:"description"`
-	Status      string `json:"status" validate:"required"`
-	ID          string `json:"id" validate:"required"`
+	Status      string `json:"status" validate:"required,oneof=draft active inactive archived"`
 }
 
-type productUpdateInput struct {
-	Name        string `json:"name" validate:"required"`
-	Slug        string `json:"slug" validate:"required"`
-	Description string `json:"description"`
-	Status      string `json:"status" validate:"required"`
+type productCreateInput struct {
+	productWriteInput
+	ID string `json:"id" validate:"required"`
 }
 
 type productIDInput struct {
@@ -40,7 +37,7 @@ func NewHandler(service *Service) *Handler {
 	}
 }
 
-// GetMany returns all active products.
+// GetMany returns all non-deleted products.
 func (h *Handler) GetMany(w http.ResponseWriter, r *http.Request) {
 	products, err := h.service.GetMany(r.Context())
 	if err != nil {
@@ -51,11 +48,10 @@ func (h *Handler) GetMany(w http.ResponseWriter, r *http.Request) {
 	httpx.RespondJSON(w, http.StatusOK, productDTOs(products))
 }
 
-// GetByID returns an active product by ID.
+// GetByID returns a non-deleted product by ID.
 func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimSpace(r.PathValue("id"))
-	if err := httpx.Validate(r.Context(), productIDInput{ID: id}); err != nil {
-		httpx.RespondInvalidBody(w, err)
+	id, ok := validateProductID(w, r)
+	if !ok {
 		return
 	}
 
@@ -91,15 +87,14 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	httpx.RespondJSON(w, http.StatusCreated, productDTO(product))
 }
 
-// Update updates an active product by ID.
+// Update updates a non-deleted product by ID.
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimSpace(r.PathValue("id"))
-	if err := httpx.Validate(r.Context(), productIDInput{ID: id}); err != nil {
-		httpx.RespondInvalidBody(w, err)
+	id, ok := validateProductID(w, r)
+	if !ok {
 		return
 	}
 
-	var input productUpdateInput
+	var input productWriteInput
 	if err := httpx.DecodeAndValidate(w, r, &input); err != nil {
 		httpx.RespondInvalidBody(w, err)
 		return
@@ -120,11 +115,10 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	httpx.RespondJSON(w, http.StatusOK, productDTO(product))
 }
 
-// Delete soft-deletes an active product by ID.
+// Delete soft-deletes a non-deleted product by ID.
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimSpace(r.PathValue("id"))
-	if err := httpx.Validate(r.Context(), productIDInput{ID: id}); err != nil {
-		httpx.RespondInvalidBody(w, err)
+	id, ok := validateProductID(w, r)
+	if !ok {
 		return
 	}
 
@@ -136,7 +130,22 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	httpx.RespondJSON(w, http.StatusOK, nil)
 }
 
+func validateProductID(w http.ResponseWriter, r *http.Request) (string, bool) {
+	id := strings.TrimSpace(r.PathValue("id"))
+	if err := httpx.Validate(r.Context(), productIDInput{ID: id}); err != nil {
+		httpx.RespondInvalidBody(w, err)
+		return "", false
+	}
+
+	return id, true
+}
+
 func respondProductError(w http.ResponseWriter, err error) {
+	if errors.Is(err, errInvalidProductStatus) {
+		httpx.RespondError(w, http.StatusBadRequest, "invalid_status", err.Error())
+		return
+	}
+
 	if errors.Is(err, sql.ErrNoRows) {
 		httpx.RespondError(w, http.StatusNotFound, "not_found", "product not found")
 		return

@@ -2,6 +2,13 @@ package products
 
 import "time"
 
+const (
+	productStatusDraft    = "draft"
+	productStatusActive   = "active"
+	productStatusInactive = "inactive"
+	productStatusArchived = "archived"
+)
+
 // Product represents a product.
 type Product struct {
 	ID          string     `db:"id"`

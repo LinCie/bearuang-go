@@ -18,7 +18,12 @@ func productDTO(product *Product) *ProductDTO {
 		return nil
 	}
 
-	return &ProductDTO{
+	dto := productDTOValue(*product)
+	return &dto
+}
+
+func productDTOValue(product Product) ProductDTO {
+	return ProductDTO{
 		ID:          product.ID,
 		Name:        product.Name,
 		Slug:        product.Slug,
@@ -32,7 +37,7 @@ func productDTO(product *Product) *ProductDTO {
 func productDTOs(products []Product) []ProductDTO {
 	result := make([]ProductDTO, len(products))
 	for i := range products {
-		result[i] = *productDTO(&products[i])
+		result[i] = productDTOValue(products[i])
 	}
 
 	return result
