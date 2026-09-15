@@ -7,6 +7,7 @@ import (
 
 	"bearuang-go/internal/httpx"
 	"bearuang-go/internal/middleware"
+	"bearuang-go/internal/module/products"
 )
 
 type Router struct {
@@ -15,6 +16,12 @@ type Router struct {
 
 func NewRouter(db *sqlx.DB) Router {
 	mux := http.NewServeMux()
+	productModule := products.NewModule(db)
+
+	mux.Handle(
+		"/products/",
+		http.StripPrefix("/products", productModule.Route.Handler()),
+	)
 
 	return Router{
 		mux: mux,
