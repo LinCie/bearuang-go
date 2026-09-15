@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/go-playground/validator/v10"
-
 	"bearuang-go/internal/httpx"
 )
 
@@ -16,7 +14,7 @@ type Handler struct {
 	service *Service
 }
 
-type productInput struct {
+type productCreateInput struct {
 	Name        string `json:"name" validate:"required"`
 	Slug        string `json:"slug" validate:"required"`
 	Description string `json:"description"`
@@ -24,11 +22,16 @@ type productInput struct {
 	ID          string `json:"id" validate:"required"`
 }
 
+type productUpdateInput struct {
+	Name        string `json:"name" validate:"required"`
+	Slug        string `json:"slug" validate:"required"`
+	Description string `json:"description"`
+	Status      string `json:"status" validate:"required"`
+}
+
 type productIDInput struct {
 	ID string `validate:"required"`
 }
-
-var validate = validator.New(validator.WithRequiredStructEnabled())
 
 // NewHandler creates a product handler backed by service.
 func NewHandler(service *Service) *Handler {
@@ -51,8 +54,8 @@ func (h *Handler) GetMany(w http.ResponseWriter, r *http.Request) {
 // GetByID returns an active product by ID.
 func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimSpace(r.PathValue("id"))
-	if err := validate.Struct(productIDInput{ID: id}); err != nil {
-		httpx.RespondValidationError(w, err)
+	if err := httpx.Validate(r.Context(), productIDInput{ID: id}); err != nil {
+		httpx.RespondInvalidBody(w, err)
 		return
 	}
 
@@ -67,13 +70,19 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 // Create creates a product.
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	var input productInput
+	var input productCreateInput
 	if err := httpx.DecodeAndValidate(w, r, &input); err != nil {
 		httpx.RespondInvalidBody(w, err)
 		return
 	}
 
-	product, err := h.service.Create(r.Context(), input.product(input.ID))
+	product, err := h.service.Create(r.Context(), &Product{
+		ID:          input.ID,
+		Name:        input.Name,
+		Slug:        input.Slug,
+		Description: input.Description,
+		Status:      input.Status,
+	})
 	if err != nil {
 		respondProductError(w, err)
 		return
@@ -85,18 +94,24 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // Update updates an active product by ID.
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimSpace(r.PathValue("id"))
-	if err := validate.Struct(productIDInput{ID: id}); err != nil {
-		httpx.RespondValidationError(w, err)
+	if err := httpx.Validate(r.Context(), productIDInput{ID: id}); err != nil {
+		httpx.RespondInvalidBody(w, err)
 		return
 	}
 
-	input := productInput{ID: id}
+	var input productUpdateInput
 	if err := httpx.DecodeAndValidate(w, r, &input); err != nil {
 		httpx.RespondInvalidBody(w, err)
 		return
 	}
 
-	product, err := h.service.Update(r.Context(), input.product(id))
+	product, err := h.service.Update(r.Context(), &Product{
+		ID:          id,
+		Name:        input.Name,
+		Slug:        input.Slug,
+		Description: input.Description,
+		Status:      input.Status,
+	})
 	if err != nil {
 		respondProductError(w, err)
 		return
@@ -108,8 +123,8 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 // Delete soft-deletes an active product by ID.
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimSpace(r.PathValue("id"))
-	if err := validate.Struct(productIDInput{ID: id}); err != nil {
-		httpx.RespondValidationError(w, err)
+	if err := httpx.Validate(r.Context(), productIDInput{ID: id}); err != nil {
+		httpx.RespondInvalidBody(w, err)
 		return
 	}
 
@@ -119,16 +134,6 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.RespondJSON(w, http.StatusOK, nil)
-}
-
-func (p productInput) product(id string) *Product {
-	return &Product{
-		ID:          id,
-		Name:        p.Name,
-		Slug:        p.Slug,
-		Description: p.Description,
-		Status:      p.Status,
-	}
 }
 
 func respondProductError(w http.ResponseWriter, err error) {

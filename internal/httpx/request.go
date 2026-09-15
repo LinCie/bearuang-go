@@ -1,6 +1,7 @@
 package httpx
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -85,7 +86,12 @@ func DecodeAndValidate[T any](
 	}
 
 	// Validate decoded struct.
-	if err := validate.StructCtx(r.Context(), dst); err != nil {
+	return Validate(r.Context(), dst)
+}
+
+// Validate validates a request value and returns a request error when it is invalid.
+func Validate(ctx context.Context, value any) *Error {
+	if err := validate.StructCtx(ctx, value); err != nil {
 		var validationErrors validator.ValidationErrors
 
 		if !errors.As(err, &validationErrors) {
