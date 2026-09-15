@@ -41,7 +41,7 @@ func (r *PostgresRepository) Create(ctx context.Context, product *Product) (*Pro
 	}
 
 	query := `
-		INSERT INTO PRODUCT (
+		INSERT INTO PRODUCTS (
 			id,
 			name,
 			slug,
@@ -86,7 +86,7 @@ func (r *PostgresRepository) GetByID(ctx context.Context, id string) (*Product, 
 			created_at,
 			updated_at,
 			deleted_at
-		FROM PRODUCT
+		FROM PRODUCTS
 		WHERE id = $1
 			AND deleted_at IS NULL`
 
@@ -114,7 +114,7 @@ func (r *PostgresRepository) GetMany(ctx context.Context) ([]Product, error) {
 			created_at,
 			updated_at,
 			deleted_at
-		FROM PRODUCT
+		FROM PRODUCTS
 		WHERE deleted_at IS NULL
 		ORDER BY created_at DESC, id`
 
@@ -136,7 +136,7 @@ func (r *PostgresRepository) Update(ctx context.Context, product *Product) (*Pro
 	}
 
 	query := `
-		UPDATE PRODUCT
+		UPDATE PRODUCTS
 		SET
 			name = :name,
 			slug = :slug,
@@ -175,7 +175,7 @@ func (r *PostgresRepository) Delete(ctx context.Context, id string) error {
 	}
 
 	query := `
-		UPDATE PRODUCT
+		UPDATE PRODUCTS
 		SET
 			deleted_at = NOW(),
 			updated_at = NOW()
