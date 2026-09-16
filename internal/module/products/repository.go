@@ -15,10 +15,11 @@ type Repository interface {
 		Products
 		======================================
 	*/
-	Create(ctx context.Context, product *Product) (*Product, error)
+
+	Create(ctx context.Context, product *Product) error
 	GetByID(ctx context.Context, id string) (*Product, error)
 	GetMany(ctx context.Context) ([]Product, error)
-	Update(ctx context.Context, product *Product) (*Product, error)
+	Update(ctx context.Context, product *Product) error
 	Delete(ctx context.Context, id string) error
 
 	/*
@@ -27,10 +28,10 @@ type Repository interface {
 		======================================
 	*/
 
-	CreateVariant(ctx context.Context, variant *ProductVariant) (*ProductVariant, error)
+	CreateVariant(ctx context.Context, variant *ProductVariant) error
 	GetVariantByID(ctx context.Context, productID, id string) (*ProductVariant, error)
 	GetManyVariantsByProduct(ctx context.Context, productID string) ([]ProductVariant, error)
-	UpdateVariant(ctx context.Context, variant *ProductVariant) (*ProductVariant, error)
+	UpdateVariant(ctx context.Context, variant *ProductVariant) error
 	DeleteVariant(ctx context.Context, productID, id string) error
 }
 
@@ -48,13 +49,13 @@ func NewPostgresRepository(db *sqlx.DB) *PostgresRepository {
 
 var _ Repository = (*PostgresRepository)(nil)
 
-// Create inserts a product and returns the stored row.
-func (r *PostgresRepository) Create(ctx context.Context, product *Product) (*Product, error) {
+// Create inserts a product and populates its stored fields.
+func (r *PostgresRepository) Create(ctx context.Context, product *Product) error {
 	if product == nil {
-		return nil, errors.New("product must not be nil")
+		return errors.New("product must not be nil")
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return err
 	}
 
 	query := `
@@ -76,15 +77,14 @@ func (r *PostgresRepository) Create(ctx context.Context, product *Product) (*Pro
 			deleted_at`
 	query, args, err := r.db.BindNamed(query, product)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	stored := new(Product)
-	if err := r.db.GetContext(ctx, stored, query, args...); err != nil {
-		return nil, err
+	if err := r.db.GetContext(ctx, product, query, args...); err != nil {
+		return err
 	}
 
-	return stored, nil
+	return nil
 }
 
 // GetByID returns a non-deleted product by ID.
@@ -143,13 +143,13 @@ func (r *PostgresRepository) GetMany(ctx context.Context) ([]Product, error) {
 	return products, nil
 }
 
-// Update updates a non-deleted product and returns the stored row.
-func (r *PostgresRepository) Update(ctx context.Context, product *Product) (*Product, error) {
+// Update updates a non-deleted product and populates its stored fields.
+func (r *PostgresRepository) Update(ctx context.Context, product *Product) error {
 	if product == nil {
-		return nil, errors.New("product must not be nil")
+		return errors.New("product must not be nil")
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return err
 	}
 
 	query := `
@@ -174,15 +174,14 @@ func (r *PostgresRepository) Update(ctx context.Context, product *Product) (*Pro
 
 	query, args, err := r.db.BindNamed(query, product)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	stored := new(Product)
-	if err := r.db.GetContext(ctx, stored, query, args...); err != nil {
-		return nil, err
+	if err := r.db.GetContext(ctx, product, query, args...); err != nil {
+		return err
 	}
 
-	return stored, nil
+	return nil
 }
 
 // Delete soft-deletes a non-deleted product.
@@ -221,13 +220,13 @@ Variants
 ======================================
 */
 
-// CreateVariant inserts a product variant and returns the stored row.
-func (r *PostgresRepository) CreateVariant(ctx context.Context, variant *ProductVariant) (*ProductVariant, error) {
+// CreateVariant inserts a product variant and populates its stored fields.
+func (r *PostgresRepository) CreateVariant(ctx context.Context, variant *ProductVariant) error {
 	if variant == nil {
-		return nil, errors.New("product variant must not be nil")
+		return errors.New("product variant must not be nil")
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return err
 	}
 
 	query := `
@@ -255,15 +254,14 @@ func (r *PostgresRepository) CreateVariant(ctx context.Context, variant *Product
 			deleted_at`
 	query, args, err := r.db.BindNamed(query, variant)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	stored := new(ProductVariant)
-	if err := r.db.GetContext(ctx, stored, query, args...); err != nil {
-		return nil, err
+	if err := r.db.GetContext(ctx, variant, query, args...); err != nil {
+		return err
 	}
 
-	return stored, nil
+	return nil
 }
 
 // GetVariantByID returns a non-deleted product variant by ID for a product.
@@ -336,16 +334,16 @@ func (r *PostgresRepository) GetManyVariantsByProduct(
 	return variants, nil
 }
 
-// UpdateVariant updates a non-deleted product variant and returns the stored row.
+// UpdateVariant updates a non-deleted product variant and populates its stored fields.
 func (r *PostgresRepository) UpdateVariant(
 	ctx context.Context,
 	variant *ProductVariant,
-) (*ProductVariant, error) {
+) error {
 	if variant == nil {
-		return nil, errors.New("product variant must not be nil")
+		return errors.New("product variant must not be nil")
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return err
 	}
 
 	query := `
@@ -376,15 +374,14 @@ func (r *PostgresRepository) UpdateVariant(
 
 	query, args, err := r.db.BindNamed(query, variant)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	stored := new(ProductVariant)
-	if err := r.db.GetContext(ctx, stored, query, args...); err != nil {
-		return nil, err
+	if err := r.db.GetContext(ctx, variant, query, args...); err != nil {
+		return err
 	}
 
-	return stored, nil
+	return nil
 }
 
 // DeleteVariant soft-deletes a non-deleted product variant.

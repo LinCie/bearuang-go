@@ -51,7 +51,7 @@ func (h *Handler) GetMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, productDTOs(products))
+	httpx.RespondJSON(w, http.StatusOK, products)
 }
 
 // GetByID returns a non-deleted product by ID.
@@ -67,7 +67,7 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, productDTO(product))
+	httpx.RespondJSON(w, http.StatusOK, product)
 }
 
 // Create creates a product.
@@ -78,19 +78,20 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	product, err := h.service.Create(r.Context(), &Product{
+	product := Product{
 		ID:          input.ID,
 		Name:        input.Name,
 		Slug:        input.Slug,
 		Description: input.Description,
 		Status:      input.Status,
-	})
+	}
+	err := h.service.Create(r.Context(), &product)
 	if err != nil {
 		respondProductError(w, err)
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusCreated, productDTO(product))
+	httpx.RespondJSON(w, http.StatusCreated, product)
 }
 
 // Update updates a non-deleted product by ID.
@@ -106,19 +107,19 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	product, err := h.service.Update(r.Context(), &Product{
+	product := Product{
 		ID:          id,
 		Name:        input.Name,
 		Slug:        input.Slug,
 		Description: input.Description,
 		Status:      input.Status,
-	})
-	if err != nil {
+	}
+	if err := h.service.Update(r.Context(), &product); err != nil {
 		respondProductError(w, err)
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, productDTO(product))
+	httpx.RespondJSON(w, http.StatusOK, product)
 }
 
 // Delete soft-deletes a non-deleted product by ID.
@@ -202,7 +203,7 @@ func (h *Handler) GetManyVariants(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, productVariantDTOs(variants))
+	httpx.RespondJSON(w, http.StatusOK, variants)
 }
 
 // GetVariantByID returns a non-deleted product variant by ID.
@@ -218,7 +219,7 @@ func (h *Handler) GetVariantByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, productVariantDTO(variant))
+	httpx.RespondJSON(w, http.StatusOK, variant)
 }
 
 // CreateVariant creates a product variant.
@@ -234,7 +235,7 @@ func (h *Handler) CreateVariant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variant, err := h.service.CreateVariant(r.Context(), &ProductVariant{
+	variant := ProductVariant{
 		ID:        input.ID,
 		ProductID: productID,
 		SKU:       input.SKU,
@@ -243,13 +244,13 @@ func (h *Handler) CreateVariant(w http.ResponseWriter, r *http.Request) {
 		Stock:     input.Stock,
 		Unit:      input.Unit,
 		Status:    input.Status,
-	})
-	if err != nil {
+	}
+	if err := h.service.CreateVariant(r.Context(), &variant); err != nil {
 		respondVariantError(w, err)
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusCreated, productVariantDTO(variant))
+	httpx.RespondJSON(w, http.StatusCreated, variant)
 }
 
 // UpdateVariant updates a non-deleted product variant by ID.
@@ -265,7 +266,7 @@ func (h *Handler) UpdateVariant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variant, err := h.service.UpdateVariant(r.Context(), &ProductVariant{
+	variant := ProductVariant{
 		ID:        variantID,
 		ProductID: productID,
 		SKU:       input.SKU,
@@ -274,13 +275,13 @@ func (h *Handler) UpdateVariant(w http.ResponseWriter, r *http.Request) {
 		Stock:     input.Stock,
 		Unit:      input.Unit,
 		Status:    input.Status,
-	})
-	if err != nil {
+	}
+	if err := h.service.UpdateVariant(r.Context(), &variant); err != nil {
 		respondVariantError(w, err)
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, productVariantDTO(variant))
+	httpx.RespondJSON(w, http.StatusOK, variant)
 }
 
 // DeleteVariant soft-deletes a non-deleted product variant by ID.

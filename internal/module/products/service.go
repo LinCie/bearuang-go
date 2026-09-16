@@ -28,9 +28,9 @@ func NewService(repo Repository) *Service {
 }
 
 // Create creates a product.
-func (s *Service) Create(ctx context.Context, product *Product) (*Product, error) {
+func (s *Service) Create(ctx context.Context, product *Product) error {
 	if err := validateProduct(product); err != nil {
-		return nil, err
+		return err
 	}
 
 	return s.repo.Create(ctx, product)
@@ -47,9 +47,9 @@ func (s *Service) GetMany(ctx context.Context) ([]Product, error) {
 }
 
 // Update updates a product.
-func (s *Service) Update(ctx context.Context, product *Product) (*Product, error) {
+func (s *Service) Update(ctx context.Context, product *Product) error {
 	if err := validateProduct(product); err != nil {
-		return nil, err
+		return err
 	}
 
 	return s.repo.Update(ctx, product)
@@ -84,9 +84,9 @@ var errInvalidVariantStatus = errors.New(
 )
 
 // CreateVariant creates a product variant.
-func (s *Service) CreateVariant(ctx context.Context, variant *ProductVariant) (*ProductVariant, error) {
+func (s *Service) CreateVariant(ctx context.Context, variant *ProductVariant) error {
 	if err := validateVariant(variant); err != nil {
-		return nil, err
+		return err
 	}
 
 	return s.repo.CreateVariant(ctx, variant)
@@ -103,9 +103,9 @@ func (s *Service) GetManyVariantsByProduct(ctx context.Context, productID string
 }
 
 // UpdateVariant updates a product variant.
-func (s *Service) UpdateVariant(ctx context.Context, variant *ProductVariant) (*ProductVariant, error) {
+func (s *Service) UpdateVariant(ctx context.Context, variant *ProductVariant) error {
 	if err := validateVariant(variant); err != nil {
-		return nil, err
+		return err
 	}
 
 	return s.repo.UpdateVariant(ctx, variant)
