@@ -7,6 +7,7 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"bearuang-go/internal/middleware"
+	"bearuang-go/internal/module/auth"
 	"bearuang-go/internal/module/productcategories"
 	"bearuang-go/internal/module/products"
 )
@@ -19,8 +20,11 @@ func NewRouter(db *sqlx.DB, jwtSecret string) Router {
 	router := chi.NewRouter()
 	router.Use(middleware.Logger, middleware.Recovery)
 
+	authModule := auth.NewModule(db, jwtSecret)
 	productCategoryModule := productcategories.NewModule(db)
 	productModule := products.NewModule(db)
+
+	router.Mount("/auth", authModule.Route.Handler())
 
 	protected := router.With(middleware.Auth(jwtSecret))
 
