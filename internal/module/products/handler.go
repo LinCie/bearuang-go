@@ -22,10 +22,11 @@ type Handler struct {
 }
 
 type productWriteInput struct {
-	Name        string `json:"name" validate:"required"`
-	Slug        string `json:"slug" validate:"required"`
-	Description string `json:"description"`
-	Status      string `json:"status" validate:"required,oneof=draft active inactive archived"`
+	CategoryID  *string `json:"category_id"`
+	Name        string  `json:"name" validate:"required"`
+	Slug        string  `json:"slug" validate:"required"`
+	Description string  `json:"description"`
+	Status      string  `json:"status" validate:"required,oneof=draft active inactive archived"`
 }
 
 type productCreateInput struct {
@@ -80,6 +81,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	product := Product{
 		ID:          database.GenerateULID(),
+		CategoryID:  input.CategoryID,
 		Name:        input.Name,
 		Slug:        input.Slug,
 		Description: input.Description,
@@ -109,6 +111,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 
 	product := Product{
 		ID:          id,
+		CategoryID:  input.CategoryID,
 		Name:        input.Name,
 		Slug:        input.Slug,
 		Description: input.Description,

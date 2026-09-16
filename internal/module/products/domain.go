@@ -18,6 +18,7 @@ const (
 // Product represents a product.
 type Product struct {
 	ID          string     `db:"id" json:"id"`
+	CategoryID  *string    `db:"category_id" json:"category_id"`
 	Name        string     `db:"name" json:"name"`
 	Slug        string     `db:"slug" json:"slug"`
 	Description string     `db:"description" json:"description"`

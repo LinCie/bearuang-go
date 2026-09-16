@@ -61,13 +61,15 @@ func (r *PostgresRepository) Create(ctx context.Context, product *Product) error
 	query := `
 		INSERT INTO PRODUCTS (
 			id,
+			category_id,
 			name,
 			slug,
 			description,
 			status
-		) VALUES (:id, :name, :slug, :description, :status)
+		) VALUES (:id, :category_id, :name, :slug, :description, :status)
 		RETURNING
 			id,
+			category_id,
 			name,
 			slug,
 			description,
@@ -96,6 +98,7 @@ func (r *PostgresRepository) GetByID(ctx context.Context, id string) (*Product, 
 	query := `
 		SELECT
 			id,
+			category_id,
 			name,
 			slug,
 			description,
@@ -124,6 +127,7 @@ func (r *PostgresRepository) GetMany(ctx context.Context) ([]Product, error) {
 	query := `
 		SELECT
 			id,
+			category_id,
 			name,
 			slug,
 			description,
@@ -155,6 +159,7 @@ func (r *PostgresRepository) Update(ctx context.Context, product *Product) error
 	query := `
 		UPDATE PRODUCTS
 		SET
+			category_id = :category_id,
 			name = :name,
 			slug = :slug,
 			description = :description,
@@ -164,6 +169,7 @@ func (r *PostgresRepository) Update(ctx context.Context, product *Product) error
 			AND deleted_at IS NULL
 		RETURNING
 			id,
+			category_id,
 			name,
 			slug,
 			description,
