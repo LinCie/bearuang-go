@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/go-chi/chi/v5"
+
 	"bearuang-go/internal/database"
 	"bearuang-go/internal/httpx"
 )
@@ -134,7 +136,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func validateProductCategoryID(w http.ResponseWriter, r *http.Request) (string, bool) {
-	id := strings.TrimSpace(r.PathValue("id"))
+	id := strings.TrimSpace(chi.URLParam(r, "id"))
 	if err := httpx.Validate(r.Context(), productCategoryIDInput{ID: id}); err != nil {
 		httpx.RespondInvalidBody(w, err)
 		return "", false

@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/go-chi/chi/v5"
+
 	"bearuang-go/internal/database"
 	"bearuang-go/internal/httpx"
 )
@@ -141,7 +143,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func validateProductID(w http.ResponseWriter, r *http.Request) (string, bool) {
-	id := strings.TrimSpace(r.PathValue("id"))
+	id := strings.TrimSpace(chi.URLParam(r, "id"))
 	if err := httpx.Validate(r.Context(), productIDInput{ID: id}); err != nil {
 		httpx.RespondInvalidBody(w, err)
 		return "", false
@@ -302,7 +304,7 @@ func (h *Handler) DeleteVariant(w http.ResponseWriter, r *http.Request) {
 }
 
 func validateVariantProductID(w http.ResponseWriter, r *http.Request) (string, bool) {
-	productID := strings.TrimSpace(r.PathValue("product_id"))
+	productID := strings.TrimSpace(chi.URLParam(r, "product_id"))
 	if err := httpx.Validate(r.Context(), variantProductIDInput{ProductID: productID}); err != nil {
 		httpx.RespondInvalidBody(w, err)
 		return "", false
@@ -313,8 +315,8 @@ func validateVariantProductID(w http.ResponseWriter, r *http.Request) (string, b
 
 func validateVariantPath(w http.ResponseWriter, r *http.Request) (string, string, bool) {
 	input := variantPathInput{
-		ProductID: strings.TrimSpace(r.PathValue("product_id")),
-		VariantID: strings.TrimSpace(r.PathValue("variant_id")),
+		ProductID: strings.TrimSpace(chi.URLParam(r, "product_id")),
+		VariantID: strings.TrimSpace(chi.URLParam(r, "variant_id")),
 	}
 	if err := httpx.Validate(r.Context(), input); err != nil {
 		httpx.RespondInvalidBody(w, err)

@@ -3,46 +3,35 @@ package router
 import (
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
 
-	"bearuang-go/internal/httpx"
 	"bearuang-go/internal/middleware"
 	"bearuang-go/internal/module/productcategories"
 	"bearuang-go/internal/module/products"
 )
 
 type Router struct {
-	mux *http.ServeMux
+	router chi.Router
 }
 
 func NewRouter(db *sqlx.DB, jwtSecret string) Router {
-	mux := http.NewServeMux()
+	router := chi.NewRouter()
+	router.Use(middleware.Logger, middleware.Recovery)
+
 	productCategoryModule := productcategories.NewModule(db)
 	productModule := products.NewModule(db)
-	protected := httpx.NewChain(middleware.Auth(jwtSecret))
 
-	mux.Handle(
-		"/product-categories/",
-		protected.Then(
-			http.StripPrefix("/product-categories", productCategoryModule.Route.Handler()),
-		),
-	)
+	protected := router.With(middleware.Auth(jwtSecret))
 
-	mux.Handle(
-		"/products/",
-		protected.Then(
-			http.StripPrefix("/products", productModule.Route.Handler()),
-		),
-	)
+	protected.Mount("/product-categories", productCategoryModule.Route.Handler())
+	protected.Mount("/products", productModule.Route.Handler())
 
 	return Router{
-		mux: mux,
+		router: router,
 	}
 }
 
 func (r Router) Handler() http.Handler {
-	return httpx.NewChain(
-		middleware.Logger,
-		middleware.Recovery,
-	).Then(r.mux)
+	return r.router
 }

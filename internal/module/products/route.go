@@ -1,6 +1,10 @@
 package products
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/go-chi/chi/v5"
+)
 
 // Route contains the HTTP routes for products and their variants.
 type Route struct {
@@ -16,26 +20,26 @@ func NewRoute(handler *Handler) *Route {
 
 // Handler returns the HTTP handler for the product and variant routes.
 func (r Route) Handler() http.Handler {
-	mux := http.NewServeMux()
+	router := chi.NewRouter()
 
-	registerProductRoutes(mux, r.handler)
-	registerVariantRoutes(mux, r.handler)
+	registerProductRoutes(router, r.handler)
+	registerVariantRoutes(router, r.handler)
 
-	return mux
+	return router
 }
 
-func registerProductRoutes(mux *http.ServeMux, handler *Handler) {
-	mux.HandleFunc("GET /{$}", handler.GetMany)
-	mux.HandleFunc("GET /{id}", handler.GetByID)
-	mux.HandleFunc("POST /{$}", handler.Create)
-	mux.HandleFunc("PUT /{id}", handler.Update)
-	mux.HandleFunc("DELETE /{id}", handler.Delete)
+func registerProductRoutes(router chi.Router, handler *Handler) {
+	router.Get("/", handler.GetMany)
+	router.Get("/{id}", handler.GetByID)
+	router.Post("/", handler.Create)
+	router.Put("/{id}", handler.Update)
+	router.Delete("/{id}", handler.Delete)
 }
 
-func registerVariantRoutes(mux *http.ServeMux, handler *Handler) {
-	mux.HandleFunc("GET /{product_id}/variants/{$}", handler.GetManyVariants)
-	mux.HandleFunc("GET /{product_id}/variants/{variant_id}", handler.GetVariantByID)
-	mux.HandleFunc("POST /{product_id}/variants/{$}", handler.CreateVariant)
-	mux.HandleFunc("PUT /{product_id}/variants/{variant_id}", handler.UpdateVariant)
-	mux.HandleFunc("DELETE /{product_id}/variants/{variant_id}", handler.DeleteVariant)
+func registerVariantRoutes(router chi.Router, handler *Handler) {
+	router.Get("/{product_id}/variants/", handler.GetManyVariants)
+	router.Get("/{product_id}/variants/{variant_id}", handler.GetVariantByID)
+	router.Post("/{product_id}/variants/", handler.CreateVariant)
+	router.Put("/{product_id}/variants/{variant_id}", handler.UpdateVariant)
+	router.Delete("/{product_id}/variants/{variant_id}", handler.DeleteVariant)
 }

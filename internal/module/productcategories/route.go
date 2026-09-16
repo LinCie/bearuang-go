@@ -1,6 +1,10 @@
 package productcategories
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/go-chi/chi/v5"
+)
 
 // Route contains the HTTP routes for product categories.
 type Route struct {
@@ -16,17 +20,17 @@ func NewRoute(handler *Handler) *Route {
 
 // Handler returns the HTTP handler for the product category routes.
 func (r Route) Handler() http.Handler {
-	mux := http.NewServeMux()
+	router := chi.NewRouter()
 
-	registerProductCategoryRoutes(mux, r.handler)
+	registerProductCategoryRoutes(router, r.handler)
 
-	return mux
+	return router
 }
 
-func registerProductCategoryRoutes(mux *http.ServeMux, handler *Handler) {
-	mux.HandleFunc("GET /{$}", handler.GetMany)
-	mux.HandleFunc("GET /{id}", handler.GetByID)
-	mux.HandleFunc("POST /{$}", handler.Create)
-	mux.HandleFunc("PUT /{id}", handler.Update)
-	mux.HandleFunc("DELETE /{id}", handler.Delete)
+func registerProductCategoryRoutes(router chi.Router, handler *Handler) {
+	router.Get("/", handler.GetMany)
+	router.Get("/{id}", handler.GetByID)
+	router.Post("/", handler.Create)
+	router.Put("/{id}", handler.Update)
+	router.Delete("/{id}", handler.Delete)
 }
