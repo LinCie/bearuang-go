@@ -8,21 +8,38 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// Repository provides persistence for products.
+// Repository provides persistence for products and their variants.
 type Repository interface {
+	/*
+		======================================
+		Products
+		======================================
+	*/
 	Create(ctx context.Context, product *Product) (*Product, error)
 	GetByID(ctx context.Context, id string) (*Product, error)
 	GetMany(ctx context.Context) ([]Product, error)
 	Update(ctx context.Context, product *Product) (*Product, error)
 	Delete(ctx context.Context, id string) error
+
+	/*
+		======================================
+		Variants
+		======================================
+	*/
+
+	CreateVariant(ctx context.Context, variant *ProductVariant) (*ProductVariant, error)
+	GetVariantByID(ctx context.Context, productID, id string) (*ProductVariant, error)
+	GetManyVariantsByProduct(ctx context.Context, productID string) ([]ProductVariant, error)
+	UpdateVariant(ctx context.Context, variant *ProductVariant) (*ProductVariant, error)
+	DeleteVariant(ctx context.Context, productID, id string) error
 }
 
-// PostgresRepository stores products in PostgreSQL.
+// PostgresRepository stores products and their variants in PostgreSQL.
 type PostgresRepository struct {
 	db *sqlx.DB
 }
 
-// NewPostgresRepository creates a product repository backed by PostgreSQL.
+// NewPostgresRepository creates a repository for products and their variants backed by PostgreSQL.
 func NewPostgresRepository(db *sqlx.DB) *PostgresRepository {
 	return &PostgresRepository{
 		db: db,
@@ -183,6 +200,209 @@ func (r *PostgresRepository) Delete(ctx context.Context, id string) error {
 			AND deleted_at IS NULL`
 
 	result, err := r.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}
+
+/*
+======================================
+Variants
+======================================
+*/
+
+// CreateVariant inserts a product variant and returns the stored row.
+func (r *PostgresRepository) CreateVariant(ctx context.Context, variant *ProductVariant) (*ProductVariant, error) {
+	if variant == nil {
+		return nil, errors.New("product variant must not be nil")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	query := `
+		INSERT INTO PRODUCT_VARIANTS (
+			id,
+			product_id,
+			sku,
+			name,
+			price,
+			stock,
+			unit,
+			status
+		) VALUES (:id, :product_id, :sku, :name, :price, :stock, :unit, :status)
+		RETURNING
+			id,
+			product_id,
+			sku,
+			name,
+			price,
+			stock,
+			unit,
+			status,
+			created_at,
+			updated_at,
+			deleted_at`
+	query, args, err := r.db.BindNamed(query, variant)
+	if err != nil {
+		return nil, err
+	}
+
+	stored := new(ProductVariant)
+	if err := r.db.GetContext(ctx, stored, query, args...); err != nil {
+		return nil, err
+	}
+
+	return stored, nil
+}
+
+// GetVariantByID returns a non-deleted product variant by ID for a product.
+func (r *PostgresRepository) GetVariantByID(
+	ctx context.Context,
+	productID, id string,
+) (*ProductVariant, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	query := `
+		SELECT
+			id,
+			product_id,
+			sku,
+			name,
+			price,
+			stock,
+			unit,
+			status,
+			created_at,
+			updated_at,
+			deleted_at
+		FROM PRODUCT_VARIANTS
+		WHERE product_id = $1
+			AND id = $2
+			AND deleted_at IS NULL`
+
+	variant := new(ProductVariant)
+	if err := r.db.GetContext(ctx, variant, query, productID, id); err != nil {
+		return nil, err
+	}
+
+	return variant, nil
+}
+
+// GetManyVariantsByProduct returns all non-deleted variants for a product.
+func (r *PostgresRepository) GetManyVariantsByProduct(
+	ctx context.Context,
+	productID string,
+) ([]ProductVariant, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	query := `
+		SELECT
+			id,
+			product_id,
+			sku,
+			name,
+			price,
+			stock,
+			unit,
+			status,
+			created_at,
+			updated_at,
+			deleted_at
+		FROM PRODUCT_VARIANTS
+		WHERE product_id = $1
+			AND deleted_at IS NULL
+		ORDER BY created_at DESC, id`
+
+	variants := make([]ProductVariant, 0)
+	if err := r.db.SelectContext(ctx, &variants, query, productID); err != nil {
+		return nil, err
+	}
+
+	return variants, nil
+}
+
+// UpdateVariant updates a non-deleted product variant and returns the stored row.
+func (r *PostgresRepository) UpdateVariant(
+	ctx context.Context,
+	variant *ProductVariant,
+) (*ProductVariant, error) {
+	if variant == nil {
+		return nil, errors.New("product variant must not be nil")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	query := `
+		UPDATE PRODUCT_VARIANTS
+		SET
+			sku = :sku,
+			name = :name,
+			price = :price,
+			stock = :stock,
+			unit = :unit,
+			status = :status,
+			updated_at = NOW()
+		WHERE id = :id
+			AND product_id = :product_id
+			AND deleted_at IS NULL
+		RETURNING
+			id,
+			product_id,
+			sku,
+			name,
+			price,
+			stock,
+			unit,
+			status,
+			created_at,
+			updated_at,
+			deleted_at`
+
+	query, args, err := r.db.BindNamed(query, variant)
+	if err != nil {
+		return nil, err
+	}
+
+	stored := new(ProductVariant)
+	if err := r.db.GetContext(ctx, stored, query, args...); err != nil {
+		return nil, err
+	}
+
+	return stored, nil
+}
+
+// DeleteVariant soft-deletes a non-deleted product variant.
+func (r *PostgresRepository) DeleteVariant(ctx context.Context, productID, id string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	query := `
+		UPDATE PRODUCT_VARIANTS
+		SET
+			deleted_at = NOW(),
+			updated_at = NOW()
+		WHERE product_id = $1
+			AND id = $2
+			AND deleted_at IS NULL`
+
+	result, err := r.db.ExecContext(ctx, query, productID, id)
 	if err != nil {
 		return err
 	}

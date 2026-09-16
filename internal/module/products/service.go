@@ -5,16 +5,22 @@ import (
 	"errors"
 )
 
+/*
+======================================
+Products
+======================================
+*/
+
 var errInvalidProductStatus = errors.New(
 	"status must be one of: draft, active, inactive, archived",
 )
 
-// Service contains product business operations.
+// Service contains product and product variant business operations.
 type Service struct {
 	repo Repository
 }
 
-// NewService creates a product service backed by repo.
+// NewService creates a service for products and their variants backed by repo.
 func NewService(repo Repository) *Service {
 	return &Service{
 		repo: repo,
@@ -64,5 +70,61 @@ func validateProduct(product *Product) error {
 		return nil
 	default:
 		return errInvalidProductStatus
+	}
+}
+
+/*
+======================================
+Variants
+======================================
+*/
+
+var errInvalidVariantStatus = errors.New(
+	"status must be one of: draft, active, inactive, archived",
+)
+
+// CreateVariant creates a product variant.
+func (s *Service) CreateVariant(ctx context.Context, variant *ProductVariant) (*ProductVariant, error) {
+	if err := validateVariant(variant); err != nil {
+		return nil, err
+	}
+
+	return s.repo.CreateVariant(ctx, variant)
+}
+
+// GetVariantByID returns a non-deleted product variant by ID for a product.
+func (s *Service) GetVariantByID(ctx context.Context, productID, id string) (*ProductVariant, error) {
+	return s.repo.GetVariantByID(ctx, productID, id)
+}
+
+// GetManyVariantsByProduct returns all non-deleted variants for a product.
+func (s *Service) GetManyVariantsByProduct(ctx context.Context, productID string) ([]ProductVariant, error) {
+	return s.repo.GetManyVariantsByProduct(ctx, productID)
+}
+
+// UpdateVariant updates a product variant.
+func (s *Service) UpdateVariant(ctx context.Context, variant *ProductVariant) (*ProductVariant, error) {
+	if err := validateVariant(variant); err != nil {
+		return nil, err
+	}
+
+	return s.repo.UpdateVariant(ctx, variant)
+}
+
+// DeleteVariant soft-deletes a non-deleted product variant by ID.
+func (s *Service) DeleteVariant(ctx context.Context, productID, id string) error {
+	return s.repo.DeleteVariant(ctx, productID, id)
+}
+
+func validateVariant(variant *ProductVariant) error {
+	if variant == nil {
+		return nil
+	}
+
+	switch variant.Status {
+	case variantStatusDraft, variantStatusActive, variantStatusInactive, variantStatusArchived:
+		return nil
+	default:
+		return errInvalidVariantStatus
 	}
 }
