@@ -6,6 +6,7 @@ require (
 	github.com/go-playground/validator/v10 v10.30.4
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/jmoiron/sqlx v1.4.0
+	github.com/oklog/ulid/v2 v2.1.2
 	github.com/pressly/goose/v3 v3.28.0
 )
 

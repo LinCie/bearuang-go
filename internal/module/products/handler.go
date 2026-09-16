@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"bearuang-go/internal/database"
 	"bearuang-go/internal/httpx"
 )
 
@@ -29,7 +30,6 @@ type productWriteInput struct {
 
 type productCreateInput struct {
 	productWriteInput
-	ID string `json:"id" validate:"required"`
 }
 
 type productIDInput struct {
@@ -79,7 +79,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	product := Product{
-		ID:          input.ID,
+		ID:          database.GenerateULID(),
 		Name:        input.Name,
 		Slug:        input.Slug,
 		Description: input.Description,
@@ -178,7 +178,6 @@ type variantWriteInput struct {
 
 type variantCreateInput struct {
 	variantWriteInput
-	ID string `json:"id" validate:"required"`
 }
 
 type variantProductIDInput struct {
@@ -236,7 +235,7 @@ func (h *Handler) CreateVariant(w http.ResponseWriter, r *http.Request) {
 	}
 
 	variant := ProductVariant{
-		ID:        input.ID,
+		ID:        database.GenerateULID(),
 		ProductID: productID,
 		SKU:       input.SKU,
 		Name:      input.Name,
