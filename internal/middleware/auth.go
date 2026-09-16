@@ -8,7 +8,7 @@ import (
 	jwtutil "bearuang-go/internal/jwt"
 )
 
-// Auth requires a valid Bearer JWT before serving the next handler.
+// Auth requires a valid Bearer access token before serving the next handler.
 func Auth(secret string) httpx.Constructor {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -18,7 +18,7 @@ func Auth(secret string) httpx.Constructor {
 				return
 			}
 
-			if _, err := jwtutil.ValidateToken(parts[1], secret); err != nil {
+			if _, err := jwtutil.ValidateAccessToken(parts[1], secret); err != nil {
 				respondUnauthorized(w)
 				return
 			}

@@ -17,8 +17,8 @@ type credentialsInput struct {
 	Password string `json:"password" validate:"required"`
 }
 
-type loginResponse struct {
-	Token string `json:"token"`
+type refreshTokenInput struct {
+	RefreshToken string `json:"refresh_token" validate:"required"`
 }
 
 // NewHandler creates an authentication handler backed by service.
@@ -45,7 +45,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	httpx.RespondJSON(w, http.StatusCreated, user)
 }
 
-// Login verifies a user's credentials and returns a JWT.
+// Login verifies a user's credentials and returns access and refresh tokens.
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var input credentialsInput
 	if err := httpx.DecodeAndValidate(w, r, &input); err != nil {
@@ -53,13 +53,30 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.service.Login(r.Context(), input.Email, input.Password)
+	tokens, err := h.service.Login(r.Context(), input.Email, input.Password)
 	if err != nil {
 		respondAuthError(w, err)
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, loginResponse{Token: token})
+	httpx.RespondJSON(w, http.StatusOK, tokens)
+}
+
+// Refresh exchanges a refresh token for a new access and refresh token.
+func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
+	var input refreshTokenInput
+	if err := httpx.DecodeAndValidate(w, r, &input); err != nil {
+		httpx.RespondInvalidBody(w, err)
+		return
+	}
+
+	tokens, err := h.service.Refresh(r.Context(), input.RefreshToken)
+	if err != nil {
+		respondAuthError(w, err)
+		return
+	}
+
+	httpx.RespondJSON(w, http.StatusOK, tokens)
 }
 
 func respondAuthError(w http.ResponseWriter, err error) {
@@ -77,6 +94,13 @@ func respondAuthError(w http.ResponseWriter, err error) {
 			http.StatusUnauthorized,
 			"invalid_credentials",
 			"invalid email or password",
+		)
+	case errors.Is(err, errInvalidRefreshToken):
+		httpx.RespondError(
+			w,
+			http.StatusUnauthorized,
+			"invalid_refresh_token",
+			"invalid refresh token",
 		)
 	default:
 		httpx.RespondError(

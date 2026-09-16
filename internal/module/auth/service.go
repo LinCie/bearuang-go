@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	errEmailAlreadyExists = errors.New("email already exists")
-	errInvalidCredentials = errors.New("invalid credentials")
+	errEmailAlreadyExists  = errors.New("email already exists")
+	errInvalidCredentials  = errors.New("invalid credentials")
+	errInvalidRefreshToken = errors.New("invalid refresh token")
 )
 
 // Service contains authentication business operations.
@@ -52,21 +53,35 @@ func (s *Service) Register(ctx context.Context, email, password string) (*User, 
 	return user, nil
 }
 
-// Login verifies credentials and returns a signed JWT for the user.
-func (s *Service) Login(ctx context.Context, email, password string) (string, error) {
+// Login verifies credentials and returns an access and refresh token for the user.
+func (s *Service) Login(ctx context.Context, email, password string) (jwtutil.TokenPair, error) {
 	user, err := s.repo.GetByEmail(ctx, normalizeEmail(email))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", errInvalidCredentials
+			return jwtutil.TokenPair{}, errInvalidCredentials
 		}
 
-		return "", err
+		return jwtutil.TokenPair{}, err
 	}
 	if user == nil || !verifyPassword(user.PasswordHash, password) {
-		return "", errInvalidCredentials
+		return jwtutil.TokenPair{}, errInvalidCredentials
 	}
 
-	return jwtutil.GenerateToken(user.ID, s.jwtSecret)
+	return jwtutil.GenerateTokenPair(user.ID, s.jwtSecret)
+}
+
+// Refresh validates a refresh token and returns a new access and refresh token.
+func (s *Service) Refresh(ctx context.Context, refreshToken string) (jwtutil.TokenPair, error) {
+	if err := ctx.Err(); err != nil {
+		return jwtutil.TokenPair{}, err
+	}
+
+	claims, err := jwtutil.ValidateRefreshToken(refreshToken, s.jwtSecret)
+	if err != nil || claims.Subject == "" {
+		return jwtutil.TokenPair{}, errInvalidRefreshToken
+	}
+
+	return jwtutil.GenerateTokenPair(claims.Subject, s.jwtSecret)
 }
 
 func normalizeEmail(email string) string {
