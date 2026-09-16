@@ -20,8 +20,8 @@
 
 - Keep code boring, explicit, conventional, and easy to read. Prefer 20 obvious lines over 5 clever lines.
 - Prefer small, clear duplication over an abstraction that adds indirection or debt. Do not add speculative abstractions, optimizations, or extreme edge-case handling; handle edge cases only when the requirements demand them.
-- Modules use `domain.go`, `repository.go`, `service.go`, `handler.go`, `route.go`, and `module.go`. Wire repository → service → handler; handlers do HTTP, repositories do SQL, services delegate.
-- Modules must not import each other. Compose them in `internal/router` with `http.StripPrefix`.
+- Each `internal/module/<domain>/` is a self-contained package organized as `domain.go`, `repository.go`, `service.go`, `handler.go`, `route.go`, and `module.go`; group related resources with section banners.
+- Keep layers strict: `module.go` wires repository → service → handler → route; repositories own SQL, services own validation and business rules, handlers own HTTP/input validation/responses, and routes own mux registration. Modules never import one another; compose them in `internal/router` with `http.StripPrefix`.
 - Use Go 1.22 route patterns such as `GET /{$}` and method names such as `GetMany`, `GetManyByCategory`, and `GetCategories`.
 - Return every response through `httpx.RespondJSON` or `httpx.RespondError`. Use `invalid_<field>` for bad input and `internal_error` for unexpected errors.
 - Use plain model structs with `db` tags but no JSON tags, pointer fields for nullable columns, and string IDs.
