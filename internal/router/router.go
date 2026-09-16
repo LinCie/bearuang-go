@@ -15,19 +15,24 @@ type Router struct {
 	mux *http.ServeMux
 }
 
-func NewRouter(db *sqlx.DB) Router {
+func NewRouter(db *sqlx.DB, jwtSecret string) Router {
 	mux := http.NewServeMux()
 	productCategoryModule := productcategories.NewModule(db)
 	productModule := products.NewModule(db)
+	protected := httpx.NewChain(middleware.Auth(jwtSecret))
 
 	mux.Handle(
 		"/product-categories/",
-		http.StripPrefix("/product-categories", productCategoryModule.Route.Handler()),
+		protected.Then(
+			http.StripPrefix("/product-categories", productCategoryModule.Route.Handler()),
+		),
 	)
 
 	mux.Handle(
 		"/products/",
-		http.StripPrefix("/products", productModule.Route.Handler()),
+		protected.Then(
+			http.StripPrefix("/products", productModule.Route.Handler()),
+		),
 	)
 
 	return Router{

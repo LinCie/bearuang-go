@@ -6,9 +6,12 @@ import (
 	"strconv"
 )
 
+const defaultJWTSecret = "development-secret"
+
 type Config struct {
 	DatabaseURL string
 	Port        int
+	JWTSecret   string
 }
 
 func NewConfig() (Config, error) {
@@ -26,8 +29,14 @@ func NewConfig() (Config, error) {
 		port = parsedPort
 	}
 
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = defaultJWTSecret
+	}
+
 	return Config{
 		DatabaseURL: databaseURL,
 		Port:        port,
+		JWTSecret:   jwtSecret,
 	}, nil
 }

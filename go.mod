@@ -4,6 +4,7 @@ go 1.26.8
 
 require (
 	github.com/go-playground/validator/v10 v10.30.4
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/oklog/ulid/v2 v2.1.2
