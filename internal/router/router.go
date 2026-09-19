@@ -21,13 +21,13 @@ func NewRouter(db *sqlx.DB, cfg config.Config) Router {
 	router := chi.NewRouter()
 	router.Use(middleware.Logger, middleware.Recovery)
 
-	authModule := auth.NewModule(db, cfg.JWTSecret)
+	authModule := auth.NewModule(db, cfg)
 	productCategoryModule := productcategories.NewModule(db)
 	productModule := products.NewModule(db)
 
 	router.Mount("/auth", authModule.Route.Handler())
 
-	protected := router.With(middleware.Auth(cfg.JWTSecret))
+	protected := router.With(middleware.Auth(cfg))
 
 	protected.Mount("/product-categories", productCategoryModule.Route.Handler())
 	protected.Mount("/products", productModule.Route.Handler())

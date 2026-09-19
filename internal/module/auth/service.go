@@ -16,6 +16,12 @@ type Repository interface {
 	GetByEmail(ctx context.Context, email string) (*User, error)
 }
 
+// Password hashes passwords and verifies them against encoded hashes.
+type Password interface {
+	Hash(password string) (string, error)
+	Verify(encodedHash, password string) bool
+}
+
 var (
 	errEmailAlreadyExists  = errors.New("email already exists")
 	errInvalidCredentials  = errors.New("invalid credentials")
@@ -25,13 +31,15 @@ var (
 // service contains authentication business operations.
 type service struct {
 	repo      Repository
+	password  Password
 	jwtSecret string
 }
 
-// NewService creates an authentication service backed by repo.
-func NewService(repo Repository, jwtSecret string) *service {
+// NewService creates an authentication service backed by repo and password.
+func NewService(repo Repository, jwtSecret string, password Password) *service {
 	return &service{
 		repo:      repo,
+		password:  password,
 		jwtSecret: jwtSecret,
 	}
 }
@@ -42,7 +50,7 @@ func (s *service) Register(ctx context.Context, email, password string) (*User, 
 		return nil, err
 	}
 
-	passwordHash, err := hashPassword(password)
+	passwordHash, err := s.password.Hash(password)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +77,7 @@ func (s *service) Login(ctx context.Context, email, password string) (jwtutil.To
 
 		return jwtutil.TokenPair{}, err
 	}
-	if user == nil || !verifyPassword(user.PasswordHash, password) {
+	if user == nil || !s.password.Verify(user.PasswordHash, password) {
 		return jwtutil.TokenPair{}, errInvalidCredentials
 	}
 

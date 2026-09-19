@@ -12,16 +12,30 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
-const (
-	argon2Memory      uint32 = 64 * 1024
-	argon2Iterations  uint32 = 3
-	argon2Parallelism uint8  = 4
-	argon2KeyLength   uint32 = 32
-	argon2SaltLength         = 16
-)
+// Argon2Password hashes passwords using Argon2id.
+type Argon2Password struct {
+	Memory      uint32
+	Iterations  uint32
+	Parallelism uint8
+	KeyLength   uint32
+	SaltLength  int
+}
 
-func hashPassword(password string) (string, error) {
-	salt := make([]byte, argon2SaltLength)
+var _ Password = (*Argon2Password)(nil)
+
+// NewArgon2Password creates an Argon2id password hasher with secure defaults.
+func NewArgon2Password() *Argon2Password {
+	return &Argon2Password{
+		Memory:      64 * 1024,
+		Iterations:  3,
+		Parallelism: 4,
+		KeyLength:   32,
+		SaltLength:  16,
+	}
+}
+
+func (p *Argon2Password) Hash(password string) (string, error) {
+	salt := make([]byte, p.SaltLength)
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
 		return "", fmt.Errorf("generate password salt: %w", err)
 	}
@@ -29,23 +43,23 @@ func hashPassword(password string) (string, error) {
 	hash := argon2.IDKey(
 		[]byte(password),
 		salt,
-		argon2Iterations,
-		argon2Memory,
-		argon2Parallelism,
-		argon2KeyLength,
+		p.Iterations,
+		p.Memory,
+		p.Parallelism,
+		p.KeyLength,
 	)
 
 	return fmt.Sprintf(
 		"$argon2id$v=19$m=%d,t=%d,p=%d$%s$%s",
-		argon2Memory,
-		argon2Iterations,
-		argon2Parallelism,
+		p.Memory,
+		p.Iterations,
+		p.Parallelism,
 		base64.RawStdEncoding.EncodeToString(salt),
 		base64.RawStdEncoding.EncodeToString(hash),
 	), nil
 }
 
-func verifyPassword(encodedHash, password string) bool {
+func (*Argon2Password) Verify(encodedHash, password string) bool {
 	parts := strings.Split(encodedHash, "$")
 	if len(parts) != 6 || parts[1] != "argon2id" || parts[2] != "v=19" {
 		return false

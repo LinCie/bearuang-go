@@ -4,12 +4,13 @@ import (
 	"net/http"
 	"strings"
 
+	"bearuang-go/internal/config"
 	"bearuang-go/internal/httpx"
 	jwtutil "bearuang-go/internal/jwt"
 )
 
 // Auth requires a valid Bearer access token before serving the next handler.
-func Auth(secret string) httpx.Constructor {
+func Auth(cfg config.Config) httpx.Constructor {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			parts := strings.Fields(r.Header.Get("Authorization"))
@@ -18,7 +19,7 @@ func Auth(secret string) httpx.Constructor {
 				return
 			}
 
-			if _, err := jwtutil.ValidateAccessToken(parts[1], secret); err != nil {
+			if _, err := jwtutil.ValidateAccessToken(parts[1], cfg.JWTSecret); err != nil {
 				respondUnauthorized(w)
 				return
 			}
