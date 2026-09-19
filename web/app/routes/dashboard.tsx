@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 
-import { BookOpen, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useNavigate } from "react-router";
 
 import type { Route } from "./+types/dashboard";
+import { BearMark } from "~/components/brand/bear-mark";
 import { Button } from "~/components/ui/button";
 import { clearTokenPair, getStoredTokenPair } from "~/lib/auth";
 
@@ -43,7 +44,7 @@ export default function DashboardRoute() {
         <header className="flex items-center justify-between border-b border-border pb-6">
           <div className="inline-flex items-center gap-3 text-xl font-semibold tracking-[-0.035em]">
             <span className="flex size-9 items-center justify-center rounded-full border border-border">
-              <BookOpen aria-hidden="true" className="size-4" strokeWidth={1.6} />
+              <BearMark aria-hidden="true" className="size-4.5" />
             </span>
             <span>bearuang</span>
           </div>

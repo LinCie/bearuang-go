@@ -112,3 +112,21 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes bear-blink {
+  0%, 92%, 96%, 100% {
+    transform: scaleY(1);
+  }
+  94% {
+    transform: scaleY(0.12);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-bear-blink {
+    animation: bear-blink 5.5s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+}
+

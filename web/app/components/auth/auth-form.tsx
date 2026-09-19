@@ -26,6 +26,10 @@ import {
 } from "~/lib/auth";
 
 import { AuthShell } from "./auth-shell";
+import {
+  BearCompanion,
+  type BearReactionState,
+} from "./bear-companion";
 
 type AuthMode = "login" | "register";
 
@@ -78,6 +82,10 @@ function AuthForm({ mode }: { mode: AuthMode }) {
   const [requestError, setRequestError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState<
+    "email" | "password" | "confirmPassword" | null
+  >(null);
+  const [emailLength, setEmailLength] = useState(0);
   const isRegister = mode === "register";
   const hasRegistrationSuccess =
     !isRegister && searchParams.get("registered") === "1";
@@ -131,24 +139,92 @@ function AuthForm({ mode }: { mode: AuthMode }) {
     },
   });
 
-  const title = isRegister ? "Buat akun Bearuang" : "Masuk ke Bearuang";
+  const title = isRegister ? (
+    <>
+      Buat akun{" "}
+      <span className="relative inline-block text-primary">
+        Bearuang
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-1.5 left-0 h-2 w-full text-accent"
+          fill="none"
+          preserveAspectRatio="none"
+          viewBox="0 0 100 8"
+        >
+          <path
+            d="M 1 4.5 C 30 7.5, 70 7.5, 99 4"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeWidth="2.5"
+          />
+        </svg>
+      </span>
+      <span className="text-primary">.</span>
+    </>
+  ) : (
+    <>
+      Masuk ke{" "}
+      <span className="relative inline-block text-primary">
+        Bearuang
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-1.5 left-0 h-2 w-full text-accent"
+          fill="none"
+          preserveAspectRatio="none"
+          viewBox="0 0 100 8"
+        >
+          <path
+            d="M 1 4.5 C 30 7.5, 70 7.5, 99 4"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeWidth="2.5"
+          />
+        </svg>
+      </span>
+      <span className="text-primary">.</span>
+    </>
+  );
   const description = isRegister
     ? "Mulai dengan email dan kata sandi. Setelah akun dibuat, Anda bisa masuk ke ruang kerja dengan kredensial yang sama."
     : "Masukkan kredensial Anda untuk melanjutkan ke ruang kerja bisnis.";
 
   return (
-    <AuthShell title={title} description={description}>
-      <form
-        aria-describedby="auth-description"
-        aria-labelledby="auth-title"
-        noValidate
-        className="space-y-6"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void form.handleSubmit();
-        }}
-      >
-        {requestError ? (
+    <form.Subscribe selector={(state) => state.isSubmitting}>
+      {(isSubmitting) => {
+        let bearState: BearReactionState = "idle";
+        if (hasRegistrationSuccess) {
+          bearState = "success";
+        } else if (isSubmitting) {
+          bearState = "submitting";
+        } else if (requestError) {
+          bearState = "error";
+        } else if (focusedField === "password") {
+          bearState = showPassword ? "peek" : "password";
+        } else if (focusedField === "confirmPassword") {
+          bearState = showConfirmPassword ? "peek" : "password";
+        } else if (focusedField === "email") {
+          bearState = "email";
+        }
+
+        return (
+          <AuthShell
+            companion={
+              <BearCompanion emailLength={emailLength} state={bearState} />
+            }
+            description={description}
+            title={title}
+          >
+            <form
+              aria-describedby="auth-description"
+              aria-labelledby="auth-title"
+              noValidate
+              className="space-y-6"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void form.handleSubmit();
+              }}
+            >
+              {requestError ? (
           <div
             aria-live="assertive"
             className="flex gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3.5 text-sm leading-5 text-destructive"
@@ -200,8 +276,17 @@ function AuthForm({ mode }: { mode: AuthMode }) {
                         id={fieldId}
                         inputMode="email"
                         name={field.name}
-                        onBlur={() => field.handleBlur()}
-                        onChange={(event) => field.handleChange(event.target.value)}
+                        onBlur={() => {
+                          field.handleBlur();
+                          setFocusedField((current) =>
+                            current === "email" ? null : current,
+                          );
+                        }}
+                        onChange={(event) => {
+                          field.handleChange(event.target.value);
+                          setEmailLength(event.target.value.length);
+                        }}
+                        onFocus={() => setFocusedField("email")}
                         placeholder="nama@perusahaan.id"
                         required
                         type="email"
@@ -243,8 +328,14 @@ function AuthForm({ mode }: { mode: AuthMode }) {
                         className="pl-11 pr-14"
                         id={fieldId}
                         name={field.name}
-                        onBlur={() => field.handleBlur()}
+                        onBlur={() => {
+                          field.handleBlur();
+                          setFocusedField((current) =>
+                            current === "password" ? null : current,
+                          );
+                        }}
                         onChange={(event) => field.handleChange(event.target.value)}
+                        onFocus={() => setFocusedField("password")}
                         placeholder="Masukkan kata sandi"
                         required
                         type={showPassword ? "text" : "password"}
@@ -255,6 +346,7 @@ function AuthForm({ mode }: { mode: AuthMode }) {
                         aria-pressed={showPassword}
                         className="absolute right-1.5 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground motion-safe:transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-1 focus-visible:ring-offset-card"
                         onClick={() => setShowPassword((prev) => !prev)}
+                        onMouseDown={(event) => event.preventDefault()}
                         type="button"
                       >
                         {showPassword ? (
@@ -325,8 +417,14 @@ function AuthForm({ mode }: { mode: AuthMode }) {
                           className="pl-11 pr-14"
                           id={fieldId}
                           name={field.name}
-                          onBlur={() => field.handleBlur()}
+                          onBlur={() => {
+                            field.handleBlur();
+                            setFocusedField((current) =>
+                              current === "confirmPassword" ? null : current,
+                            );
+                          }}
                           onChange={(event) => field.handleChange(event.target.value)}
+                          onFocus={() => setFocusedField("confirmPassword")}
                           placeholder="Ulangi kata sandi"
                           required
                           type={showConfirmPassword ? "text" : "password"}
@@ -337,6 +435,7 @@ function AuthForm({ mode }: { mode: AuthMode }) {
                           aria-pressed={showConfirmPassword}
                           className="absolute right-1.5 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground motion-safe:transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-1 focus-visible:ring-offset-card"
                           onClick={() => setShowConfirmPassword((prev) => !prev)}
+                          onMouseDown={(event) => event.preventDefault()}
                           type="button"
                         >
                           {showConfirmPassword ? (
@@ -378,17 +477,20 @@ function AuthForm({ mode }: { mode: AuthMode }) {
           )}
         </form.Subscribe>
 
-        <p className="text-center text-sm leading-6 text-muted-foreground">
-          {isRegister ? "Sudah punya akun?" : "Belum punya akun?"}{" "}
-          <Link
-            className="-mx-1 px-1 font-semibold text-primary underline decoration-accent underline-offset-4 motion-safe:transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            to={isRegister ? "/login" : "/register"}
-          >
-            {isRegister ? "Masuk" : "Daftar"}
-          </Link>
-        </p>
-      </form>
-    </AuthShell>
+              <p className="text-center text-sm leading-6 text-muted-foreground">
+                {isRegister ? "Sudah punya akun?" : "Belum punya akun?"}{" "}
+                <Link
+                  className="-mx-1 px-1 font-semibold text-primary underline decoration-accent underline-offset-4 motion-safe:transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  to={isRegister ? "/login" : "/register"}
+                >
+                  {isRegister ? "Masuk" : "Daftar"}
+                </Link>
+              </p>
+            </form>
+          </AuthShell>
+        );
+      }}
+    </form.Subscribe>
   );
 }
 

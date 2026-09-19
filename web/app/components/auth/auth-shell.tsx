@@ -1,14 +1,15 @@
 import type { ReactNode } from "react";
 
-import { BookOpen } from "lucide-react";
+import { BearMark } from "~/components/brand/bear-mark";
 
 type AuthShellProps = {
   children: ReactNode;
-  description: string;
-  title: string;
+  companion?: ReactNode;
+  description: ReactNode;
+  title: ReactNode;
 };
 
-function AuthShell({ children, description, title }: AuthShellProps) {
+function AuthShell({ children, companion, description, title }: AuthShellProps) {
   return (
     <main className="min-h-svh overflow-x-hidden bg-background text-foreground selection:bg-accent selection:text-foreground">
       <div className="grid min-h-svh w-full lg:grid-cols-[minmax(420px,0.42fr)_minmax(0,0.58fr)]">
@@ -16,7 +17,7 @@ function AuthShell({ children, description, title }: AuthShellProps) {
           <div className="relative z-10 flex items-center justify-between">
             <div className="group inline-flex items-center gap-3 text-xl font-semibold tracking-[-0.035em]">
               <span className="flex size-9 items-center justify-center rounded-full border border-auth-panel-foreground/55 motion-safe:transition-transform motion-safe:group-hover:-rotate-6">
-                <BookOpen aria-hidden="true" className="size-4" strokeWidth={1.6} />
+                <BearMark aria-hidden="true" className="size-4.5" />
               </span>
               <span>bearuang</span>
             </div>
@@ -49,13 +50,22 @@ function AuthShell({ children, description, title }: AuthShellProps) {
 
         <section aria-describedby="auth-description" aria-labelledby="auth-title" className="flex min-w-0 items-center bg-background px-5 py-8 sm:px-10 sm:py-12 lg:min-h-svh lg:border-l lg:border-border lg:px-16 xl:px-24">
           <div className="mx-auto w-full max-w-[31rem]">
-            <div className="mb-7 border-b border-border pb-6 sm:mb-11 sm:pb-9">
+            {companion ? (
+              <div className="mb-6 flex justify-center sm:mb-8">
+                {companion}
+              </div>
+            ) : null}
+            <div className="mb-6 sm:mb-8">
               <h1 id="auth-title" className="text-3xl font-semibold leading-[1.08] tracking-[-0.035em] text-foreground sm:text-5xl sm:leading-[1.04]">
                 {title}
               </h1>
               <p id="auth-description" className="mt-3 max-w-[38ch] text-sm leading-6 text-muted-foreground sm:mt-4 sm:text-base sm:leading-7">
                 {description}
               </p>
+              <div aria-hidden="true" className="mt-6 flex items-center sm:mt-8">
+                <div className="h-0.5 w-10 rounded-full bg-primary/75" />
+                <div className="h-px flex-1 bg-border" />
+              </div>
             </div>
             {children}
           </div>
