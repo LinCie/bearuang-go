@@ -9,7 +9,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"bearuang-go/internal/database"
 	"bearuang-go/internal/httpx"
 )
 
@@ -100,7 +99,6 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	category := ProductCategory{
-		ID:          database.GenerateULID(),
 		ParentID:    input.ParentID,
 		Name:        input.Name,
 		Slug:        input.Slug,

@@ -6,6 +6,8 @@ import (
 	"errors"
 
 	"github.com/jmoiron/sqlx"
+
+	"bearuang-go/internal/database"
 )
 
 // postgresRepository stores product categories in PostgreSQL.
@@ -30,6 +32,8 @@ func (r *postgresRepository) Create(ctx context.Context, category *ProductCatego
 	if err := ctx.Err(); err != nil {
 		return err
 	}
+
+	category.ID = database.GenerateID()
 
 	query := `
 		INSERT INTO PRODUCT_CATEGORIES (
@@ -84,12 +88,12 @@ func (r *postgresRepository) GetByID(ctx context.Context, id string) (*ProductCa
 		WHERE id = $1
 			AND deleted_at IS NULL`
 
-	category := new(ProductCategory)
-	if err := r.db.GetContext(ctx, category, query, id); err != nil {
+	var category ProductCategory
+	if err := r.db.GetContext(ctx, &category, query, id); err != nil {
 		return nil, err
 	}
 
-	return category, nil
+	return &category, nil
 }
 
 // GetMany returns all non-deleted product categories.

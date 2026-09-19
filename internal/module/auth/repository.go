@@ -6,6 +6,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
+
+	"bearuang-go/internal/database"
 )
 
 // postgresRepository stores users in PostgreSQL.
@@ -30,6 +32,8 @@ func (r *postgresRepository) Create(ctx context.Context, user *User) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
+
+	user.ID = database.GenerateID()
 
 	query := `
 		INSERT INTO USERS (
@@ -76,10 +80,10 @@ func (r *postgresRepository) GetByEmail(ctx context.Context, email string) (*Use
 		FROM USERS
 		WHERE email = $1`
 
-	user := new(User)
-	if err := r.db.GetContext(ctx, user, query, email); err != nil {
+	var user User
+	if err := r.db.GetContext(ctx, &user, query, email); err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	return &user, nil
 }

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"strings"
 
-	"bearuang-go/internal/database"
 	jwtutil "bearuang-go/internal/jwt"
 )
 
@@ -56,7 +55,6 @@ func (s *service) Register(ctx context.Context, email, password string) (*User, 
 	}
 
 	user := &User{
-		ID:           database.GenerateULID(),
 		Email:        normalizeEmail(email),
 		PasswordHash: string(passwordHash),
 	}

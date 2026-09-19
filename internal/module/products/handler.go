@@ -9,7 +9,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"bearuang-go/internal/database"
 	"bearuang-go/internal/httpx"
 )
 
@@ -118,7 +117,6 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	product := Product{
-		ID:          database.GenerateULID(),
 		CategoryID:  input.CategoryID,
 		Name:        input.Name,
 		Slug:        input.Slug,
@@ -284,7 +282,6 @@ func (h *Handler) CreateVariant(w http.ResponseWriter, r *http.Request) {
 	}
 
 	variant := ProductVariant{
-		ID:        database.GenerateULID(),
 		ProductID: productID,
 		SKU:       input.SKU,
 		Name:      input.Name,

@@ -6,6 +6,8 @@ import (
 	"errors"
 
 	"github.com/jmoiron/sqlx"
+
+	"bearuang-go/internal/database"
 )
 
 // postgresRepository stores products and their variants in PostgreSQL.
@@ -31,6 +33,8 @@ func (r *postgresRepository) Create(ctx context.Context, product *Product) error
 		return err
 	}
 
+	product.ID = database.GenerateID()
+
 	query := `
 		INSERT INTO PRODUCTS (
 			id,
@@ -50,6 +54,7 @@ func (r *postgresRepository) Create(ctx context.Context, product *Product) error
 			created_at,
 			updated_at,
 			deleted_at`
+
 	query, args, err := r.db.BindNamed(query, product)
 	if err != nil {
 		return err
@@ -83,12 +88,12 @@ func (r *postgresRepository) GetByID(ctx context.Context, id string) (*Product, 
 		WHERE id = $1
 			AND deleted_at IS NULL`
 
-	product := new(Product)
-	if err := r.db.GetContext(ctx, product, query, id); err != nil {
+	var product Product
+	if err := r.db.GetContext(ctx, &product, query, id); err != nil {
 		return nil, err
 	}
 
-	return product, nil
+	return &product, nil
 }
 
 // GetMany returns all non-deleted products.
@@ -208,6 +213,8 @@ func (r *postgresRepository) CreateVariant(ctx context.Context, variant *Product
 		return err
 	}
 
+	variant.ID = database.GenerateID()
+
 	query := `
 		INSERT INTO PRODUCT_VARIANTS (
 			id,
@@ -231,6 +238,7 @@ func (r *postgresRepository) CreateVariant(ctx context.Context, variant *Product
 			created_at,
 			updated_at,
 			deleted_at`
+
 	query, args, err := r.db.BindNamed(query, variant)
 	if err != nil {
 		return err
@@ -270,12 +278,12 @@ func (r *postgresRepository) GetVariantByID(
 			AND id = $2
 			AND deleted_at IS NULL`
 
-	variant := new(ProductVariant)
-	if err := r.db.GetContext(ctx, variant, query, productID, id); err != nil {
+	var variant ProductVariant
+	if err := r.db.GetContext(ctx, &variant, query, productID, id); err != nil {
 		return nil, err
 	}
 
-	return variant, nil
+	return &variant, nil
 }
 
 // GetManyVariantsByProduct returns all non-deleted variants for a product.
