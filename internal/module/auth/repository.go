@@ -8,28 +8,22 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// Repository provides persistence for users.
-type Repository interface {
-	Create(ctx context.Context, user *User) error
-	GetByEmail(ctx context.Context, email string) (*User, error)
-}
-
-// PostgresRepository stores users in PostgreSQL.
-type PostgresRepository struct {
+// postgresRepository stores users in PostgreSQL.
+type postgresRepository struct {
 	db *sqlx.DB
 }
 
 // NewPostgresRepository creates a repository for users backed by PostgreSQL.
-func NewPostgresRepository(db *sqlx.DB) *PostgresRepository {
-	return &PostgresRepository{
+func NewPostgresRepository(db *sqlx.DB) *postgresRepository {
+	return &postgresRepository{
 		db: db,
 	}
 }
 
-var _ Repository = (*PostgresRepository)(nil)
+var _ Repository = (*postgresRepository)(nil)
 
 // Create inserts a user and populates its stored fields.
-func (r *PostgresRepository) Create(ctx context.Context, user *User) error {
+func (r *postgresRepository) Create(ctx context.Context, user *User) error {
 	if user == nil {
 		return errors.New("user must not be nil")
 	}
@@ -67,7 +61,7 @@ func (r *PostgresRepository) Create(ctx context.Context, user *User) error {
 }
 
 // GetByEmail returns a user by email.
-func (r *PostgresRepository) GetByEmail(ctx context.Context, email string) (*User, error) {
+func (r *postgresRepository) GetByEmail(ctx context.Context, email string) (*User, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}

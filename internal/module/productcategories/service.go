@@ -5,24 +5,33 @@ import (
 	"errors"
 )
 
+// Repository provides persistence for product categories.
+type Repository interface {
+	Create(ctx context.Context, category *ProductCategory) error
+	GetByID(ctx context.Context, id string) (*ProductCategory, error)
+	GetMany(ctx context.Context) ([]ProductCategory, error)
+	Update(ctx context.Context, category *ProductCategory) error
+	Delete(ctx context.Context, id string) error
+}
+
 var errInvalidProductCategoryStatus = errors.New(
 	"status must be one of: draft, active, inactive, archived",
 )
 
-// Service contains product category business operations.
-type Service struct {
+// service contains product category business operations.
+type service struct {
 	repo Repository
 }
 
 // NewService creates a service for product categories backed by repo.
-func NewService(repo Repository) *Service {
-	return &Service{
+func NewService(repo Repository) *service {
+	return &service{
 		repo: repo,
 	}
 }
 
 // Create creates a product category.
-func (s *Service) Create(ctx context.Context, category *ProductCategory) error {
+func (s *service) Create(ctx context.Context, category *ProductCategory) error {
 	if err := validateProductCategory(category); err != nil {
 		return err
 	}
@@ -31,17 +40,17 @@ func (s *Service) Create(ctx context.Context, category *ProductCategory) error {
 }
 
 // GetByID returns a product category by ID.
-func (s *Service) GetByID(ctx context.Context, id string) (*ProductCategory, error) {
+func (s *service) GetByID(ctx context.Context, id string) (*ProductCategory, error) {
 	return s.repo.GetByID(ctx, id)
 }
 
 // GetMany returns all non-deleted product categories.
-func (s *Service) GetMany(ctx context.Context) ([]ProductCategory, error) {
+func (s *service) GetMany(ctx context.Context) ([]ProductCategory, error) {
 	return s.repo.GetMany(ctx)
 }
 
 // Update updates a product category.
-func (s *Service) Update(ctx context.Context, category *ProductCategory) error {
+func (s *service) Update(ctx context.Context, category *ProductCategory) error {
 	if err := validateProductCategory(category); err != nil {
 		return err
 	}
@@ -50,7 +59,7 @@ func (s *Service) Update(ctx context.Context, category *ProductCategory) error {
 }
 
 // Delete soft-deletes a product category.
-func (s *Service) Delete(ctx context.Context, id string) error {
+func (s *service) Delete(ctx context.Context, id string) error {
 	return s.repo.Delete(ctx, id)
 }
 

@@ -1,6 +1,7 @@
 package products
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"net/http"
@@ -18,12 +19,45 @@ Products
 ======================================
 */
 
-// Handler handles HTTP requests for products and their variants.
-type Handler struct {
-	service *Service
+// Service provides product and product variant business operations to the handler.
+type Service interface {
+	/*
+		======================================
+		Products
+		======================================
+	*/
+
+	Create(ctx context.Context, product *Product) error
+	GetByID(ctx context.Context, id string) (*Product, error)
+	GetMany(ctx context.Context) ([]Product, error)
+	Update(ctx context.Context, product *Product) error
+	Delete(ctx context.Context, id string) error
+
+	/*
+		======================================
+		Variants
+		======================================
+	*/
+
+	CreateVariant(ctx context.Context, variant *ProductVariant) error
+	GetVariantByID(ctx context.Context, productID, id string) (*ProductVariant, error)
+	GetManyVariantsByProduct(ctx context.Context, productID string) ([]ProductVariant, error)
+	UpdateVariant(ctx context.Context, variant *ProductVariant) error
+	DeleteVariant(ctx context.Context, productID, id string) error
 }
 
-type productWriteInput struct {
+// Handler handles HTTP requests for products and their variants.
+type Handler struct {
+	service Service
+}
+
+/*
+======================================
+Product Types
+======================================
+*/
+
+type productCreateInput struct {
 	CategoryID  *string `json:"category_id"`
 	Name        string  `json:"name" validate:"required"`
 	Slug        string  `json:"slug" validate:"required"`
@@ -31,16 +65,18 @@ type productWriteInput struct {
 	Status      string  `json:"status" validate:"required,oneof=draft active inactive archived"`
 }
 
-type productCreateInput struct {
-	productWriteInput
-}
-
 type productIDInput struct {
 	ID string `validate:"required"`
 }
 
+/*
+======================================
+Product Handlers
+======================================
+*/
+
 // NewHandler creates a handler for products and their variants backed by service.
-func NewHandler(service *Service) *Handler {
+func NewHandler(service Service) *Handler {
 	return &Handler{
 		service: service,
 	}
@@ -54,7 +90,7 @@ func (h *Handler) GetMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, products)
+	httpx.RespondJSON(w, http.StatusOK, toProductResponses(products))
 }
 
 // GetByID returns a non-deleted product by ID.
@@ -70,7 +106,7 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, product)
+	httpx.RespondJSON(w, http.StatusOK, toProductResponse(*product))
 }
 
 // Create creates a product.
@@ -95,7 +131,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusCreated, product)
+	httpx.RespondJSON(w, http.StatusCreated, toProductResponse(product))
 }
 
 // Update updates a non-deleted product by ID.
@@ -105,7 +141,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input productWriteInput
+	var input productCreateInput
 	if err := httpx.DecodeAndValidate(w, r, &input); err != nil {
 		httpx.RespondInvalidBody(w, err)
 		return
@@ -124,7 +160,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, product)
+	httpx.RespondJSON(w, http.StatusOK, toProductResponse(product))
 }
 
 // Delete soft-deletes a non-deleted product by ID.
@@ -141,6 +177,12 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	httpx.RespondJSON(w, http.StatusOK, nil)
 }
+
+/*
+======================================
+Product Helpers
+======================================
+*/
 
 func validateProductID(w http.ResponseWriter, r *http.Request) (string, bool) {
 	id := strings.TrimSpace(chi.URLParam(r, "id"))
@@ -168,21 +210,17 @@ func respondProductError(w http.ResponseWriter, err error) {
 
 /*
 ======================================
-Variants
+Variant Types
 ======================================
 */
 
-type variantWriteInput struct {
+type variantCreateInput struct {
 	SKU    string  `json:"sku" validate:"required"`
 	Name   string  `json:"name" validate:"required"`
 	Price  float64 `json:"price"`
 	Stock  int     `json:"stock"`
 	Unit   string  `json:"unit" validate:"required"`
 	Status string  `json:"status" validate:"required,oneof=draft active inactive archived"`
-}
-
-type variantCreateInput struct {
-	variantWriteInput
 }
 
 type variantProductIDInput struct {
@@ -193,6 +231,12 @@ type variantPathInput struct {
 	ProductID string `json:"product_id" validate:"required"`
 	VariantID string `json:"variant_id" validate:"required"`
 }
+
+/*
+======================================
+Variant Handlers
+======================================
+*/
 
 // GetManyVariants returns all non-deleted variants for a product.
 func (h *Handler) GetManyVariants(w http.ResponseWriter, r *http.Request) {
@@ -207,7 +251,7 @@ func (h *Handler) GetManyVariants(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, variants)
+	httpx.RespondJSON(w, http.StatusOK, toProductVariantResponses(variants))
 }
 
 // GetVariantByID returns a non-deleted product variant by ID.
@@ -223,7 +267,7 @@ func (h *Handler) GetVariantByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, variant)
+	httpx.RespondJSON(w, http.StatusOK, toProductVariantResponse(*variant))
 }
 
 // CreateVariant creates a product variant.
@@ -254,7 +298,7 @@ func (h *Handler) CreateVariant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusCreated, variant)
+	httpx.RespondJSON(w, http.StatusCreated, toProductVariantResponse(variant))
 }
 
 // UpdateVariant updates a non-deleted product variant by ID.
@@ -264,7 +308,7 @@ func (h *Handler) UpdateVariant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input variantWriteInput
+	var input variantCreateInput
 	if err := httpx.DecodeAndValidate(w, r, &input); err != nil {
 		httpx.RespondInvalidBody(w, err)
 		return
@@ -285,7 +329,7 @@ func (h *Handler) UpdateVariant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, variant)
+	httpx.RespondJSON(w, http.StatusOK, toProductVariantResponse(variant))
 }
 
 // DeleteVariant soft-deletes a non-deleted product variant by ID.
@@ -302,6 +346,12 @@ func (h *Handler) DeleteVariant(w http.ResponseWriter, r *http.Request) {
 
 	httpx.RespondJSON(w, http.StatusOK, nil)
 }
+
+/*
+======================================
+Variant Helpers
+======================================
+*/
 
 func validateVariantProductID(w http.ResponseWriter, r *http.Request) (string, bool) {
 	productID := strings.TrimSpace(chi.URLParam(r, "product_id"))

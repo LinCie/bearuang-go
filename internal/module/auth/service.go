@@ -10,28 +10,34 @@ import (
 	jwtutil "bearuang-go/internal/jwt"
 )
 
+// Repository provides persistence for users.
+type Repository interface {
+	Create(ctx context.Context, user *User) error
+	GetByEmail(ctx context.Context, email string) (*User, error)
+}
+
 var (
 	errEmailAlreadyExists  = errors.New("email already exists")
 	errInvalidCredentials  = errors.New("invalid credentials")
 	errInvalidRefreshToken = errors.New("invalid refresh token")
 )
 
-// Service contains authentication business operations.
-type Service struct {
+// service contains authentication business operations.
+type service struct {
 	repo      Repository
 	jwtSecret string
 }
 
 // NewService creates an authentication service backed by repo.
-func NewService(repo Repository, jwtSecret string) *Service {
-	return &Service{
+func NewService(repo Repository, jwtSecret string) *service {
+	return &service{
 		repo:      repo,
 		jwtSecret: jwtSecret,
 	}
 }
 
 // Register creates a user account without signing the user in.
-func (s *Service) Register(ctx context.Context, email, password string) (*User, error) {
+func (s *service) Register(ctx context.Context, email, password string) (*User, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -54,7 +60,7 @@ func (s *Service) Register(ctx context.Context, email, password string) (*User, 
 }
 
 // Login verifies credentials and returns an access and refresh token for the user.
-func (s *Service) Login(ctx context.Context, email, password string) (jwtutil.TokenPair, error) {
+func (s *service) Login(ctx context.Context, email, password string) (jwtutil.TokenPair, error) {
 	user, err := s.repo.GetByEmail(ctx, normalizeEmail(email))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -71,7 +77,7 @@ func (s *Service) Login(ctx context.Context, email, password string) (jwtutil.To
 }
 
 // Refresh validates a refresh token and returns a new access and refresh token.
-func (s *Service) Refresh(ctx context.Context, refreshToken string) (jwtutil.TokenPair, error) {
+func (s *service) Refresh(ctx context.Context, refreshToken string) (jwtutil.TokenPair, error) {
 	if err := ctx.Err(); err != nil {
 		return jwtutil.TokenPair{}, err
 	}

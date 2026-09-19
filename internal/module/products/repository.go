@@ -8,49 +8,22 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// Repository provides persistence for products and their variants.
-type Repository interface {
-	/*
-		======================================
-		Products
-		======================================
-	*/
-
-	Create(ctx context.Context, product *Product) error
-	GetByID(ctx context.Context, id string) (*Product, error)
-	GetMany(ctx context.Context) ([]Product, error)
-	Update(ctx context.Context, product *Product) error
-	Delete(ctx context.Context, id string) error
-
-	/*
-		======================================
-		Variants
-		======================================
-	*/
-
-	CreateVariant(ctx context.Context, variant *ProductVariant) error
-	GetVariantByID(ctx context.Context, productID, id string) (*ProductVariant, error)
-	GetManyVariantsByProduct(ctx context.Context, productID string) ([]ProductVariant, error)
-	UpdateVariant(ctx context.Context, variant *ProductVariant) error
-	DeleteVariant(ctx context.Context, productID, id string) error
-}
-
-// PostgresRepository stores products and their variants in PostgreSQL.
-type PostgresRepository struct {
+// postgresRepository stores products and their variants in PostgreSQL.
+type postgresRepository struct {
 	db *sqlx.DB
 }
 
 // NewPostgresRepository creates a repository for products and their variants backed by PostgreSQL.
-func NewPostgresRepository(db *sqlx.DB) *PostgresRepository {
-	return &PostgresRepository{
+func NewPostgresRepository(db *sqlx.DB) *postgresRepository {
+	return &postgresRepository{
 		db: db,
 	}
 }
 
-var _ Repository = (*PostgresRepository)(nil)
+var _ Repository = (*postgresRepository)(nil)
 
 // Create inserts a product and populates its stored fields.
-func (r *PostgresRepository) Create(ctx context.Context, product *Product) error {
+func (r *postgresRepository) Create(ctx context.Context, product *Product) error {
 	if product == nil {
 		return errors.New("product must not be nil")
 	}
@@ -90,7 +63,7 @@ func (r *PostgresRepository) Create(ctx context.Context, product *Product) error
 }
 
 // GetByID returns a non-deleted product by ID.
-func (r *PostgresRepository) GetByID(ctx context.Context, id string) (*Product, error) {
+func (r *postgresRepository) GetByID(ctx context.Context, id string) (*Product, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -119,7 +92,7 @@ func (r *PostgresRepository) GetByID(ctx context.Context, id string) (*Product, 
 }
 
 // GetMany returns all non-deleted products.
-func (r *PostgresRepository) GetMany(ctx context.Context) ([]Product, error) {
+func (r *postgresRepository) GetMany(ctx context.Context) ([]Product, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -148,7 +121,7 @@ func (r *PostgresRepository) GetMany(ctx context.Context) ([]Product, error) {
 }
 
 // Update updates a non-deleted product and populates its stored fields.
-func (r *PostgresRepository) Update(ctx context.Context, product *Product) error {
+func (r *postgresRepository) Update(ctx context.Context, product *Product) error {
 	if product == nil {
 		return errors.New("product must not be nil")
 	}
@@ -191,7 +164,7 @@ func (r *PostgresRepository) Update(ctx context.Context, product *Product) error
 }
 
 // Delete soft-deletes a non-deleted product.
-func (r *PostgresRepository) Delete(ctx context.Context, id string) error {
+func (r *postgresRepository) Delete(ctx context.Context, id string) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -227,7 +200,7 @@ Variants
 */
 
 // CreateVariant inserts a product variant and populates its stored fields.
-func (r *PostgresRepository) CreateVariant(ctx context.Context, variant *ProductVariant) error {
+func (r *postgresRepository) CreateVariant(ctx context.Context, variant *ProductVariant) error {
 	if variant == nil {
 		return errors.New("product variant must not be nil")
 	}
@@ -271,7 +244,7 @@ func (r *PostgresRepository) CreateVariant(ctx context.Context, variant *Product
 }
 
 // GetVariantByID returns a non-deleted product variant by ID for a product.
-func (r *PostgresRepository) GetVariantByID(
+func (r *postgresRepository) GetVariantByID(
 	ctx context.Context,
 	productID, id string,
 ) (*ProductVariant, error) {
@@ -306,7 +279,7 @@ func (r *PostgresRepository) GetVariantByID(
 }
 
 // GetManyVariantsByProduct returns all non-deleted variants for a product.
-func (r *PostgresRepository) GetManyVariantsByProduct(
+func (r *postgresRepository) GetManyVariantsByProduct(
 	ctx context.Context,
 	productID string,
 ) ([]ProductVariant, error) {
@@ -341,7 +314,7 @@ func (r *PostgresRepository) GetManyVariantsByProduct(
 }
 
 // UpdateVariant updates a non-deleted product variant and populates its stored fields.
-func (r *PostgresRepository) UpdateVariant(
+func (r *postgresRepository) UpdateVariant(
 	ctx context.Context,
 	variant *ProductVariant,
 ) error {
@@ -391,7 +364,7 @@ func (r *PostgresRepository) UpdateVariant(
 }
 
 // DeleteVariant soft-deletes a non-deleted product variant.
-func (r *PostgresRepository) DeleteVariant(ctx context.Context, productID, id string) error {
+func (r *postgresRepository) DeleteVariant(ctx context.Context, productID, id string) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}

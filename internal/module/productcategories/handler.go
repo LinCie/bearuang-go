@@ -1,6 +1,7 @@
 package productcategories
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"net/http"
@@ -12,12 +13,33 @@ import (
 	"bearuang-go/internal/httpx"
 )
 
-// Handler handles HTTP requests for product categories.
-type Handler struct {
-	service *Service
+/*
+======================================
+Product Categories
+======================================
+*/
+
+// Service provides product category business operations to the handler.
+type Service interface {
+	Create(ctx context.Context, category *ProductCategory) error
+	GetByID(ctx context.Context, id string) (*ProductCategory, error)
+	GetMany(ctx context.Context) ([]ProductCategory, error)
+	Update(ctx context.Context, category *ProductCategory) error
+	Delete(ctx context.Context, id string) error
 }
 
-type productCategoryWriteInput struct {
+// Handler handles HTTP requests for product categories.
+type Handler struct {
+	service Service
+}
+
+/*
+======================================
+Product Category Types
+======================================
+*/
+
+type productCategoryCreateInput struct {
 	ParentID    *string `json:"parent_id"`
 	Name        string  `json:"name" validate:"required"`
 	Slug        string  `json:"slug" validate:"required"`
@@ -25,16 +47,18 @@ type productCategoryWriteInput struct {
 	Status      string  `json:"status" validate:"required,oneof=draft active inactive archived"`
 }
 
-type productCategoryCreateInput struct {
-	productCategoryWriteInput
-}
-
 type productCategoryIDInput struct {
 	ID string `validate:"required"`
 }
 
+/*
+======================================
+Product Category Handlers
+======================================
+*/
+
 // NewHandler creates a handler for product categories backed by service.
-func NewHandler(service *Service) *Handler {
+func NewHandler(service Service) *Handler {
 	return &Handler{
 		service: service,
 	}
@@ -48,7 +72,7 @@ func (h *Handler) GetMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, categories)
+	httpx.RespondJSON(w, http.StatusOK, toProductCategoryResponses(categories))
 }
 
 // GetByID returns a non-deleted product category by ID.
@@ -64,7 +88,7 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, category)
+	httpx.RespondJSON(w, http.StatusOK, toProductCategoryResponse(*category))
 }
 
 // Create creates a product category.
@@ -88,7 +112,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusCreated, category)
+	httpx.RespondJSON(w, http.StatusCreated, toProductCategoryResponse(category))
 }
 
 // Update updates a non-deleted product category by ID.
@@ -98,7 +122,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input productCategoryWriteInput
+	var input productCategoryCreateInput
 	if err := httpx.DecodeAndValidate(w, r, &input); err != nil {
 		httpx.RespondInvalidBody(w, err)
 		return
@@ -117,7 +141,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, category)
+	httpx.RespondJSON(w, http.StatusOK, toProductCategoryResponse(category))
 }
 
 // Delete soft-deletes a non-deleted product category by ID.
@@ -134,6 +158,12 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	httpx.RespondJSON(w, http.StatusOK, nil)
 }
+
+/*
+======================================
+Product Category Helpers
+======================================
+*/
 
 func validateProductCategoryID(w http.ResponseWriter, r *http.Request) (string, bool) {
 	id := strings.TrimSpace(chi.URLParam(r, "id"))

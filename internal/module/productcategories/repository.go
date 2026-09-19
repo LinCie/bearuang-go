@@ -8,31 +8,22 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// Repository provides persistence for product categories.
-type Repository interface {
-	Create(ctx context.Context, category *ProductCategory) error
-	GetByID(ctx context.Context, id string) (*ProductCategory, error)
-	GetMany(ctx context.Context) ([]ProductCategory, error)
-	Update(ctx context.Context, category *ProductCategory) error
-	Delete(ctx context.Context, id string) error
-}
-
-// PostgresRepository stores product categories in PostgreSQL.
-type PostgresRepository struct {
+// postgresRepository stores product categories in PostgreSQL.
+type postgresRepository struct {
 	db *sqlx.DB
 }
 
 // NewPostgresRepository creates a repository for product categories backed by PostgreSQL.
-func NewPostgresRepository(db *sqlx.DB) *PostgresRepository {
-	return &PostgresRepository{
+func NewPostgresRepository(db *sqlx.DB) *postgresRepository {
+	return &postgresRepository{
 		db: db,
 	}
 }
 
-var _ Repository = (*PostgresRepository)(nil)
+var _ Repository = (*postgresRepository)(nil)
 
 // Create inserts a product category and populates its stored fields.
-func (r *PostgresRepository) Create(ctx context.Context, category *ProductCategory) error {
+func (r *postgresRepository) Create(ctx context.Context, category *ProductCategory) error {
 	if category == nil {
 		return errors.New("product category must not be nil")
 	}
@@ -73,7 +64,7 @@ func (r *PostgresRepository) Create(ctx context.Context, category *ProductCatego
 }
 
 // GetByID returns a non-deleted product category by ID.
-func (r *PostgresRepository) GetByID(ctx context.Context, id string) (*ProductCategory, error) {
+func (r *postgresRepository) GetByID(ctx context.Context, id string) (*ProductCategory, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -102,7 +93,7 @@ func (r *PostgresRepository) GetByID(ctx context.Context, id string) (*ProductCa
 }
 
 // GetMany returns all non-deleted product categories.
-func (r *PostgresRepository) GetMany(ctx context.Context) ([]ProductCategory, error) {
+func (r *postgresRepository) GetMany(ctx context.Context) ([]ProductCategory, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -131,7 +122,7 @@ func (r *PostgresRepository) GetMany(ctx context.Context) ([]ProductCategory, er
 }
 
 // Update updates a non-deleted product category and populates its stored fields.
-func (r *PostgresRepository) Update(ctx context.Context, category *ProductCategory) error {
+func (r *postgresRepository) Update(ctx context.Context, category *ProductCategory) error {
 	if category == nil {
 		return errors.New("product category must not be nil")
 	}
@@ -174,7 +165,7 @@ func (r *PostgresRepository) Update(ctx context.Context, category *ProductCatego
 }
 
 // Delete soft-deletes a non-deleted product category.
-func (r *PostgresRepository) Delete(ctx context.Context, id string) error {
+func (r *postgresRepository) Delete(ctx context.Context, id string) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
