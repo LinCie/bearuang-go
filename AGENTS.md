@@ -4,7 +4,7 @@
 
 - Dev: `make dev` (or `go run ./cmd/api`).
 - Database: `make postgres-up|postgres-down`.
-- Migrations: `make migrate-up|down|status|version|reset`; create one with `make migration name=create_users`.
+- Migrations: `make migrate-up|down|status|version|reset`. **When a new migration is needed, always run `make migration name=<descriptive_name>` from the repository root. This Make target is the only permitted way to create a migration file; never create, timestamp, rename, copy, or invoke goose directly to create one. After the target generates the file, edit the generated SQL as needed. If the command fails, fix the command or environment and do not bypass it.**
 - Checks: `gofmt -l .`, `go vet ./...`, `go build ./...`; frontend commands run from `web/` with `bun run dev|build|typecheck`.
 - No tests or CI are configured.
 
@@ -36,5 +36,5 @@
 - Use plain model structs with `db` tags but no JSON tags, pointer fields for nullable columns, and string IDs.
 - Repositories use `*sqlx.DB`, raw SQL with uppercase table names, context-aware `GetContext`/`SelectContext`/`ExecContext`, `BindNamed` for named writes, and an early `ctx.Err()` check.
 - Run `gofmt`. Group imports as standard library, external packages, then `bearuang-go/...`; document exported types; retain existing section banners, wrapped long calls, and interface assertions.
-- Name migrations `<timestamp>_<name>.sql` and include goose `Up` and `Down` sections.
+- Migration files must be generated with `make migration name=<descriptive_name>`; do not manually create migration files. Generated migrations must contain goose `Up` and `Down` sections.
 - Read configuration from environment variables with in-code defaults; do not load dotenv files in Go.
