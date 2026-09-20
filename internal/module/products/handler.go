@@ -216,7 +216,6 @@ type variantCreateInput struct {
 	SKU    string  `json:"sku" validate:"required"`
 	Name   string  `json:"name" validate:"required"`
 	Price  float64 `json:"price"`
-	Stock  int     `json:"stock"`
 	Unit   string  `json:"unit" validate:"required"`
 	Status string  `json:"status" validate:"required,oneof=draft active inactive archived"`
 }
@@ -286,7 +285,6 @@ func (h *Handler) CreateVariant(w http.ResponseWriter, r *http.Request) {
 		SKU:       input.SKU,
 		Name:      input.Name,
 		Price:     input.Price,
-		Stock:     input.Stock,
 		Unit:      input.Unit,
 		Status:    input.Status,
 	}
@@ -317,7 +315,6 @@ func (h *Handler) UpdateVariant(w http.ResponseWriter, r *http.Request) {
 		SKU:       input.SKU,
 		Name:      input.Name,
 		Price:     input.Price,
-		Stock:     input.Stock,
 		Unit:      input.Unit,
 		Status:    input.Status,
 	}

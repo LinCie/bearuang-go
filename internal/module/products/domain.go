@@ -43,11 +43,12 @@ const (
 
 // ProductVariant represents a product variant.
 type ProductVariant struct {
-	ID        string     `db:"id"`
-	ProductID string     `db:"product_id"`
-	SKU       string     `db:"sku"`
-	Name      string     `db:"name"`
-	Price     float64    `db:"price"`
+	ID        string  `db:"id"`
+	ProductID string  `db:"product_id"`
+	SKU       string  `db:"sku"`
+	Name      string  `db:"name"`
+	Price     float64 `db:"price"`
+	// Stock is the denormalized aggregate maintained by inventory operations.
 	Stock     int        `db:"stock"`
 	Unit      string     `db:"unit"`
 	Status    string     `db:"status"`

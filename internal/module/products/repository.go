@@ -222,10 +222,9 @@ func (r *postgresRepository) CreateVariant(ctx context.Context, variant *Product
 			sku,
 			name,
 			price,
-			stock,
 			unit,
 			status
-		) VALUES (:id, :product_id, :sku, :name, :price, :stock, :unit, :status)
+		) VALUES (:id, :product_id, :sku, :name, :price, :unit, :status)
 		RETURNING
 			id,
 			product_id,
@@ -339,7 +338,6 @@ func (r *postgresRepository) UpdateVariant(
 			sku = :sku,
 			name = :name,
 			price = :price,
-			stock = :stock,
 			unit = :unit,
 			status = :status,
 			updated_at = NOW()
