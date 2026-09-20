@@ -18,12 +18,7 @@ import { Button } from "~/components/ui/button";
 import { Field, FieldContent, FieldError } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import {
-  getAuthRequestError,
-  login,
-  register,
-  saveTokenPair,
-} from "~/lib/auth";
+import { getAuthRequestError, login, register } from "~/lib/auth";
 
 import { AuthShell } from "./auth-shell";
 import {
@@ -113,17 +108,10 @@ function AuthForm({ mode }: { mode: AuthMode }) {
           return;
         }
 
-        const tokens = await login({
+        await login({
           email: value.email.trim(),
           password: value.password,
         });
-        if (!saveTokenPair(tokens)) {
-          setRequestError(
-            "Sesi tidak dapat disimpan di peramban ini. Izinkan penyimpanan lalu coba lagi.",
-          );
-          return;
-        }
-
         navigate("/dashboard");
       } catch (error) {
         const request = await getAuthRequestError(error);

@@ -15,7 +15,7 @@ type Module struct {
 func NewModule(db *sqlx.DB, cfg config.Config) Module {
 	repository := NewPostgresRepository(db)
 	service := NewService(repository, cfg.JWTSecret, NewArgon2Password())
-	handler := NewHandler(service)
+	handler := NewHandler(service, cfg.CookieSecure)
 
 	return Module{
 		Route: NewRoute(handler),

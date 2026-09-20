@@ -9,17 +9,17 @@ import (
 	jwtutil "bearuang-go/internal/jwt"
 )
 
-// Auth requires a valid Bearer access token before serving the next handler.
+// Auth requires a valid access token cookie or Bearer token before serving the next handler.
 func Auth(cfg config.Config) httpx.Constructor {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			parts := strings.Fields(r.Header.Get("Authorization"))
-			if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+			token := accessToken(r)
+			if token == "" {
 				respondUnauthorized(w)
 				return
 			}
 
-			if _, err := jwtutil.ValidateAccessToken(parts[1], cfg.JWTSecret); err != nil {
+			if _, err := jwtutil.ValidateAccessToken(token, cfg.JWTSecret); err != nil {
 				respondUnauthorized(w)
 				return
 			}
@@ -27,6 +27,20 @@ func Auth(cfg config.Config) httpx.Constructor {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func accessToken(r *http.Request) string {
+	parts := strings.Fields(r.Header.Get("Authorization"))
+	if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
+		return parts[1]
+	}
+
+	cookie, err := r.Cookie(config.AccessTokenCookieName)
+	if err != nil {
+		return ""
+	}
+
+	return cookie.Value
 }
 
 func respondUnauthorized(w http.ResponseWriter) {

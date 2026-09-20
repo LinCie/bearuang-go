@@ -6,7 +6,7 @@ import { useNavigate } from "react-router";
 import type { Route } from "./+types/dashboard";
 import { BearMark } from "~/components/brand/bear-mark";
 import { Button } from "~/components/ui/button";
-import { clearTokenPair, getStoredTokenPair } from "~/lib/auth";
+import { logout, refreshSession } from "~/lib/auth";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -20,12 +20,19 @@ export default function DashboardRoute() {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    if (!getStoredTokenPair()) {
-      navigate("/login", { replace: true });
-      return;
-    }
+    let cancelled = false;
 
-    setIsReady(true);
+    void refreshSession()
+      .then(() => {
+        if (!cancelled) setIsReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) navigate("/login", { replace: true });
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [navigate]);
 
   if (!isReady) {
@@ -51,8 +58,9 @@ export default function DashboardRoute() {
           <Button
             className="min-h-11 gap-2 px-3"
             onClick={() => {
-              clearTokenPair();
-              navigate("/login", { replace: true });
+              void logout()
+                .catch(() => undefined)
+                .finally(() => navigate("/login", { replace: true }));
             }}
             type="button"
             variant="ghost"

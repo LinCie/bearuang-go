@@ -25,6 +25,7 @@ func (r Route) Handler() http.Handler {
 	router.Post("/register", r.handler.Register)
 	router.Post("/login", r.handler.Login)
 	router.Post("/refresh", r.handler.Refresh)
+	router.Post("/logout", r.handler.Logout)
 
 	return router
 }

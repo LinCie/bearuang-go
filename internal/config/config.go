@@ -6,12 +6,23 @@ import (
 	"strconv"
 )
 
-const defaultJWTSecret = "development-secret"
+const (
+	defaultEnvironment    = "development"
+	productionEnvironment = "production"
+	defaultJWTSecret      = "development-secret"
+
+	// AccessTokenCookieName is the name of the HTTP-only access-token cookie.
+	AccessTokenCookieName = "bearuang_access_token"
+	// RefreshTokenCookieName is the name of the HTTP-only refresh-token cookie.
+	RefreshTokenCookieName = "bearuang_refresh_token"
+)
 
 type Config struct {
-	DatabaseURL string
-	Port        int
-	JWTSecret   string
+	Environment  string
+	DatabaseURL  string
+	Port         int
+	JWTSecret    string
+	CookieSecure bool
 }
 
 func NewConfig() (Config, error) {
@@ -34,9 +45,16 @@ func NewConfig() (Config, error) {
 		jwtSecret = defaultJWTSecret
 	}
 
+	environment := os.Getenv("ENVIRONMENT")
+	if environment == "" {
+		environment = defaultEnvironment
+	}
+
 	return Config{
-		DatabaseURL: databaseURL,
-		Port:        port,
-		JWTSecret:   jwtSecret,
+		Environment:  environment,
+		DatabaseURL:  databaseURL,
+		Port:         port,
+		JWTSecret:    jwtSecret,
+		CookieSecure: environment == productionEnvironment,
 	}, nil
 }

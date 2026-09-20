@@ -1,36 +1,36 @@
 import ky from "ky";
 
-const apiBaseUrl = (import.meta.env.VITE_API_URL || "/api").replace(/\/+$/, "");
+const apiBaseUrl = `${(import.meta.env.VITE_API_URL || "/api").replace(/\/+$/, "")}/`;
 
-export const AUTH_STORAGE_KEY = "bearuang.auth";
-
-function getStoredAccessToken() {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const stored = window.sessionStorage.getItem(AUTH_STORAGE_KEY);
-    if (!stored) return null;
-
-    const parsed = JSON.parse(stored) as { access_token?: unknown };
-    return typeof parsed.access_token === "string" && parsed.access_token
-      ? parsed.access_token
-      : null;
-  } catch {
-    return null;
-  }
-}
+const refreshApi = ky.create({
+  baseUrl: apiBaseUrl,
+  credentials: "include",
+  retry: 0,
+});
 
 export const api = ky.create({
   baseUrl: apiBaseUrl,
+  credentials: "include",
+  retry: {
+    limit: 1,
+  },
   hooks: {
-    beforeRequest: [
-      ({ request }) => {
-        if (request.url.includes("/auth/")) return;
+    afterResponse: [
+      async ({ request, response, retryCount }) => {
+        const isAuthRoute = new URL(request.url).pathname.includes("/auth/");
+        const isAuthFailure = response.status === 401 || response.status === 403;
 
-        const accessToken = getStoredAccessToken();
-        if (accessToken) {
-          request.headers.set("Authorization", `Bearer ${accessToken}`);
+        if (retryCount > 0 || !isAuthFailure || isAuthRoute) {
+          return;
         }
+
+        try {
+          await refreshApi.post("auth/refresh");
+        } catch {
+          return;
+        }
+
+        return ky.retry();
       },
     ],
   },
