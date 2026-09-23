@@ -21,7 +21,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("create database connection: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("close database: %v", err)
+		}
+	}()
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Port),

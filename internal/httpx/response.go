@@ -20,7 +20,7 @@ type errorResponse = Error
 func RespondJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(dataResponse{Data: data})
+	_ = json.NewEncoder(w).Encode(dataResponse{Data: data})
 }
 
 // RespondError writes a JSON error response with the given status code,
@@ -38,7 +38,7 @@ func RespondErrorWithFields(
 ) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(errorResponse{
+	_ = json.NewEncoder(w).Encode(errorResponse{
 		Code:    code,
 		Message: message,
 		Fields:  fields,

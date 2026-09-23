@@ -73,7 +73,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusCreated, toUserResponse(*user))
+	httpx.RespondJSON(w, http.StatusCreated, UserResponse(*user))
 }
 
 // Login verifies credentials and sets HTTP-only access and refresh cookies.

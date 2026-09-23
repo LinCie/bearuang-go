@@ -71,7 +71,12 @@ func (h *Handler) GetMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, toProductCategoryResponses(categories))
+	response := make([]ProductCategoryResponse, len(categories))
+	for i, c := range categories {
+		response[i] = ProductCategoryResponse(c)
+	}
+
+	httpx.RespondJSON(w, http.StatusOK, response)
 }
 
 // GetByID returns a non-deleted product category by ID.
@@ -87,7 +92,9 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, toProductCategoryResponse(*category))
+	response := ProductCategoryResponse(*category)
+
+	httpx.RespondJSON(w, http.StatusOK, response)
 }
 
 // Create creates a product category.
@@ -110,7 +117,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusCreated, toProductCategoryResponse(category))
+	response := ProductCategoryResponse(category)
+
+	httpx.RespondJSON(w, http.StatusCreated, response)
 }
 
 // Update updates a non-deleted product category by ID.
@@ -139,7 +148,9 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, toProductCategoryResponse(category))
+	response := ProductCategoryResponse(category)
+
+	httpx.RespondJSON(w, http.StatusOK, response)
 }
 
 // Delete soft-deletes a non-deleted product category by ID.

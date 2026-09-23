@@ -89,7 +89,12 @@ func (h *Handler) GetMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, toProductResponses(products))
+	response := make([]ProductResponse, len(products))
+	for i, product := range products {
+		response[i] = ProductResponse(product)
+	}
+
+	httpx.RespondJSON(w, http.StatusOK, response)
 }
 
 // GetByID returns a non-deleted product by ID.
@@ -105,7 +110,9 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, toProductResponse(*product))
+	response := ProductResponse(*product)
+
+	httpx.RespondJSON(w, http.StatusOK, response)
 }
 
 // Create creates a product.
@@ -129,7 +136,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusCreated, toProductResponse(product))
+	response := ProductResponse(product)
+
+	httpx.RespondJSON(w, http.StatusCreated, response)
 }
 
 // Update updates a non-deleted product by ID.
@@ -158,7 +167,9 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, toProductResponse(product))
+	response := ProductResponse(product)
+
+	httpx.RespondJSON(w, http.StatusOK, response)
 }
 
 // Delete soft-deletes a non-deleted product by ID.
@@ -248,7 +259,12 @@ func (h *Handler) GetManyVariants(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, toProductVariantResponses(variants))
+	response := make([]ProductVariantResponse, len(variants))
+	for i, variant := range variants {
+		response[i] = ProductVariantResponse(variant)
+	}
+
+	httpx.RespondJSON(w, http.StatusOK, response)
 }
 
 // GetVariantByID returns a non-deleted product variant by ID.
@@ -264,7 +280,9 @@ func (h *Handler) GetVariantByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, toProductVariantResponse(*variant))
+	response := ProductVariantResponse(*variant)
+
+	httpx.RespondJSON(w, http.StatusOK, response)
 }
 
 // CreateVariant creates a product variant.
@@ -293,7 +311,9 @@ func (h *Handler) CreateVariant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusCreated, toProductVariantResponse(variant))
+	response := ProductVariantResponse(variant)
+
+	httpx.RespondJSON(w, http.StatusCreated, response)
 }
 
 // UpdateVariant updates a non-deleted product variant by ID.
@@ -323,7 +343,9 @@ func (h *Handler) UpdateVariant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.RespondJSON(w, http.StatusOK, toProductVariantResponse(variant))
+	response := ProductVariantResponse(variant)
+
+	httpx.RespondJSON(w, http.StatusOK, response)
 }
 
 // DeleteVariant soft-deletes a non-deleted product variant by ID.
