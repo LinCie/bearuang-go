@@ -11,6 +11,7 @@ import (
 	"bearuang-go/internal/module/auth"
 	"bearuang-go/internal/module/productcategories"
 	"bearuang-go/internal/module/products"
+	"bearuang-go/internal/module/warehouses"
 )
 
 type Router struct {
@@ -24,6 +25,7 @@ func NewRouter(db *sqlx.DB, cfg config.Config) Router {
 	authModule := auth.NewModule(db, cfg)
 	productCategoryModule := productcategories.NewModule(db)
 	productModule := products.NewModule(db)
+	warehouseModule := warehouses.NewModule(db)
 
 	router.Mount("/auth", authModule.Route.Handler())
 
@@ -31,6 +33,7 @@ func NewRouter(db *sqlx.DB, cfg config.Config) Router {
 
 	protected.Mount("/product-categories", productCategoryModule.Route.Handler())
 	protected.Mount("/products", productModule.Route.Handler())
+	protected.Mount("/warehouses", warehouseModule.Route.Handler())
 
 	return Router{
 		router: router,
