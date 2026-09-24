@@ -167,6 +167,8 @@ func respondWarehouseError(w http.ResponseWriter, err error) {
 		httpx.RespondError(w, http.StatusBadRequest, "invalid_status", err.Error())
 	case errors.Is(err, errDuplicateWarehouseCode):
 		httpx.RespondError(w, http.StatusConflict, "duplicate_code", err.Error())
+	case errors.Is(err, errWarehouseInUse):
+		httpx.RespondError(w, http.StatusConflict, "warehouse_in_use", err.Error())
 	case errors.Is(err, sql.ErrNoRows):
 		httpx.RespondError(w, http.StatusNotFound, "not_found", "warehouse not found")
 	default:

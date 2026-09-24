@@ -126,7 +126,7 @@ func (r *postgresRepository) Adjust(
 		return nil, nil, errWarehouseNotActive
 	}
 
-	variantExists, err := activeVariantExists(ctx, tx, adjustment.VariantID)
+	variantExists, err := lockActiveProductAndVariant(ctx, tx, adjustment.VariantID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -329,14 +329,58 @@ func appendInventoryFilters(query string, warehouseID, variantID *string) (strin
 	return query, args
 }
 
+// lockActiveProductAndVariant serializes adjustments with product and variant deletion before balance changes.
+func lockActiveProductAndVariant(
+	ctx context.Context,
+	tx *sqlx.Tx,
+	variantID string,
+) (bool, error) {
+	var productID string
+	productQuery := `
+		SELECT product.id
+		FROM PRODUCTS AS product
+		INNER JOIN PRODUCT_VARIANTS AS variant
+			ON variant.product_id = product.id
+		WHERE variant.id = $1
+			AND variant.deleted_at IS NULL
+			AND product.deleted_at IS NULL
+		FOR SHARE OF product`
+	if err := tx.GetContext(ctx, &productID, productQuery, variantID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	var lockedVariantID string
+	variantQuery := `
+		SELECT id
+		FROM PRODUCT_VARIANTS
+		WHERE product_id = $1
+			AND id = $2
+			AND deleted_at IS NULL
+		FOR NO KEY UPDATE`
+	if err := tx.GetContext(ctx, &lockedVariantID, variantQuery, productID, variantID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
+}
+
 func activeVariantExists(ctx context.Context, tx *sqlx.Tx, variantID string) (bool, error) {
 	var exists bool
 	query := `
 		SELECT EXISTS (
 			SELECT 1
-			FROM PRODUCT_VARIANTS
-			WHERE id = $1
-				AND deleted_at IS NULL
+			FROM PRODUCT_VARIANTS AS variant
+			INNER JOIN PRODUCTS AS product
+				ON product.id = variant.product_id
+			WHERE variant.id = $1
+				AND variant.deleted_at IS NULL
+				AND product.deleted_at IS NULL
 		)`
 	if err := tx.GetContext(ctx, &exists, query, variantID); err != nil {
 		return false, err

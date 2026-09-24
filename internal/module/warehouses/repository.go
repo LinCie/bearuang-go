@@ -178,21 +178,58 @@ func (r *postgresRepository) Update(ctx context.Context, warehouse *Warehouse) e
 	return nil
 }
 
-// Delete soft-deletes a non-deleted warehouse.
+// Delete soft-deletes an unused warehouse.
 func (r *postgresRepository) Delete(ctx context.Context, id string) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 
-	query := `
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	var warehouseID string
+	lockQuery := `
+		SELECT id
+		FROM WAREHOUSES
+		WHERE id = $1
+			AND deleted_at IS NULL
+		FOR UPDATE`
+	if err := tx.GetContext(ctx, &warehouseID, lockQuery, id); err != nil {
+		return err
+	}
+
+	var used bool
+	usageQuery := `
+		SELECT
+			EXISTS (
+				SELECT 1
+				FROM INVENTORY_BALANCES
+				WHERE warehouse_id = $1
+			) OR EXISTS (
+				SELECT 1
+				FROM STOCK_MOVEMENTS
+				WHERE warehouse_id = $1
+			)`
+	if err := tx.GetContext(ctx, &used, usageQuery, id); err != nil {
+		return err
+	}
+	if used {
+		return errWarehouseInUse
+	}
+
+	deleteQuery := `
 		UPDATE WAREHOUSES
 		SET
 			deleted_at = NOW(),
 			updated_at = NOW()
 		WHERE id = $1
 			AND deleted_at IS NULL`
-
-	result, err := r.db.ExecContext(ctx, query, id)
+	result, err := tx.ExecContext(ctx, deleteQuery, id)
 	if err != nil {
 		return err
 	}
@@ -205,7 +242,7 @@ func (r *postgresRepository) Delete(ctx context.Context, id string) error {
 		return sql.ErrNoRows
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 func warehouseWriteError(err error) error {

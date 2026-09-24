@@ -38,8 +38,13 @@ Products
 ======================================
 */
 
-var errInvalidProductStatus = errors.New(
-	"status must be one of: draft, active, inactive, archived",
+var (
+	errInvalidProductStatus = errors.New(
+		"status must be one of: draft, active, inactive, archived",
+	)
+	errProductInUse = errors.New(
+		"product contains variants with inventory history and must be archived instead",
+	)
 )
 
 // service contains product and product variant business operations.
@@ -106,8 +111,13 @@ Variants
 ======================================
 */
 
-var errInvalidVariantStatus = errors.New(
-	"status must be one of: draft, active, inactive, archived",
+var (
+	errInvalidVariantStatus = errors.New(
+		"status must be one of: draft, active, inactive, archived",
+	)
+	errVariantInUse = errors.New(
+		"product variant has inventory history and must be archived instead",
+	)
 )
 
 // CreateVariant creates a product variant.

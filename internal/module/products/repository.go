@@ -168,21 +168,66 @@ func (r *postgresRepository) Update(ctx context.Context, product *Product) error
 	return nil
 }
 
-// Delete soft-deletes a non-deleted product.
+// Delete soft-deletes a product with no inventory-relevant variants.
 func (r *postgresRepository) Delete(ctx context.Context, id string) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 
-	query := `
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	var productID string
+	lockQuery := `
+		SELECT id
+		FROM PRODUCTS
+		WHERE id = $1
+			AND deleted_at IS NULL
+		FOR UPDATE`
+	if err := tx.GetContext(ctx, &productID, lockQuery, id); err != nil {
+		return err
+	}
+
+	var used bool
+	usageQuery := `
+		SELECT EXISTS (
+			SELECT 1
+			FROM PRODUCT_VARIANTS variant
+			WHERE variant.product_id = $1
+				AND (
+					variant.stock <> 0
+					OR EXISTS (
+						SELECT 1
+						FROM INVENTORY_BALANCES balance
+						WHERE balance.variant_id = variant.id
+					)
+					OR EXISTS (
+						SELECT 1
+						FROM STOCK_MOVEMENTS movement
+						WHERE movement.variant_id = variant.id
+					)
+				)
+		)`
+	if err := tx.GetContext(ctx, &used, usageQuery, id); err != nil {
+		return err
+	}
+	if used {
+		return errProductInUse
+	}
+
+	deleteQuery := `
 		UPDATE PRODUCTS
 		SET
 			deleted_at = NOW(),
 			updated_at = NOW()
 		WHERE id = $1
 			AND deleted_at IS NULL`
-
-	result, err := r.db.ExecContext(ctx, query, id)
+	result, err := tx.ExecContext(ctx, deleteQuery, id)
 	if err != nil {
 		return err
 	}
@@ -195,7 +240,7 @@ func (r *postgresRepository) Delete(ctx context.Context, id string) error {
 		return sql.ErrNoRows
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 /*
@@ -369,13 +414,53 @@ func (r *postgresRepository) UpdateVariant(
 	return nil
 }
 
-// DeleteVariant soft-deletes a non-deleted product variant.
+// DeleteVariant soft-deletes a variant with no inventory state or history.
 func (r *postgresRepository) DeleteVariant(ctx context.Context, productID, id string) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 
-	query := `
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	var stock int
+	lockQuery := `
+		SELECT stock
+		FROM PRODUCT_VARIANTS
+		WHERE product_id = $1
+			AND id = $2
+			AND deleted_at IS NULL
+		FOR UPDATE`
+	if err := tx.GetContext(ctx, &stock, lockQuery, productID, id); err != nil {
+		return err
+	}
+
+	var used bool
+	usageQuery := `
+		SELECT
+			$1 <> 0
+			OR EXISTS (
+				SELECT 1
+				FROM INVENTORY_BALANCES
+				WHERE variant_id = $2
+			) OR EXISTS (
+				SELECT 1
+				FROM STOCK_MOVEMENTS
+				WHERE variant_id = $2
+			)`
+	if err := tx.GetContext(ctx, &used, usageQuery, stock, id); err != nil {
+		return err
+	}
+	if used {
+		return errVariantInUse
+	}
+
+	deleteQuery := `
 		UPDATE PRODUCT_VARIANTS
 		SET
 			deleted_at = NOW(),
@@ -383,8 +468,7 @@ func (r *postgresRepository) DeleteVariant(ctx context.Context, productID, id st
 		WHERE product_id = $1
 			AND id = $2
 			AND deleted_at IS NULL`
-
-	result, err := r.db.ExecContext(ctx, query, productID, id)
+	result, err := tx.ExecContext(ctx, deleteQuery, productID, id)
 	if err != nil {
 		return err
 	}
@@ -397,5 +481,5 @@ func (r *postgresRepository) DeleteVariant(ctx context.Context, productID, id st
 		return sql.ErrNoRows
 	}
 
-	return nil
+	return tx.Commit()
 }

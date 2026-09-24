@@ -209,6 +209,11 @@ func respondProductError(w http.ResponseWriter, err error) {
 		return
 	}
 
+	if errors.Is(err, errProductInUse) {
+		httpx.RespondError(w, http.StatusConflict, "product_in_use", err.Error())
+		return
+	}
+
 	if errors.Is(err, sql.ErrNoRows) {
 		httpx.RespondError(w, http.StatusNotFound, "not_found", "product not found")
 		return
@@ -395,6 +400,11 @@ func validateVariantPath(w http.ResponseWriter, r *http.Request) (string, string
 func respondVariantError(w http.ResponseWriter, err error) {
 	if errors.Is(err, errInvalidVariantStatus) {
 		httpx.RespondError(w, http.StatusBadRequest, "invalid_status", err.Error())
+		return
+	}
+
+	if errors.Is(err, errVariantInUse) {
+		httpx.RespondError(w, http.StatusConflict, "variant_in_use", err.Error())
 		return
 	}
 
