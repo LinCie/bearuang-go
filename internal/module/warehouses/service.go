@@ -14,6 +14,7 @@ var (
 	)
 	errDuplicateWarehouseCode = errors.New("warehouse code already exists")
 	errWarehouseInUse         = errors.New("warehouse has inventory history and must be archived instead")
+	errWarehouseHasStock      = errors.New("warehouse must have zero stock before it can be made inactive or archived")
 )
 
 // service contains warehouse business operations.

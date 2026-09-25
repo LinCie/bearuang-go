@@ -166,16 +166,61 @@ func (r *postgresRepository) Update(ctx context.Context, warehouse *Warehouse) e
 			updated_at,
 			deleted_at`
 
-	query, args, err := r.db.BindNamed(query, warehouse)
+	if warehouse.Status == warehouseStatusActive {
+		query, args, err := r.db.BindNamed(query, warehouse)
+		if err != nil {
+			return err
+		}
+
+		if err := r.db.GetContext(ctx, warehouse, query, args...); err != nil {
+			return warehouseWriteError(err)
+		}
+		return nil
+	}
+
+	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
 	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
 
-	if err := r.db.GetContext(ctx, warehouse, query, args...); err != nil {
+	var warehouseID string
+	lockQuery := `
+		SELECT id
+		FROM WAREHOUSES
+		WHERE id = $1
+			AND deleted_at IS NULL
+		FOR UPDATE`
+	if err := tx.GetContext(ctx, &warehouseID, lockQuery, warehouse.ID); err != nil {
+		return err
+	}
+
+	var hasStock bool
+	stockQuery := `
+		SELECT EXISTS (
+			SELECT 1
+			FROM INVENTORY_BALANCES
+			WHERE warehouse_id = $1
+				AND quantity > 0
+		)`
+	if err := tx.GetContext(ctx, &hasStock, stockQuery, warehouse.ID); err != nil {
+		return err
+	}
+	if hasStock {
+		return errWarehouseHasStock
+	}
+
+	query, args, err := tx.BindNamed(query, warehouse)
+	if err != nil {
+		return err
+	}
+	if err := tx.GetContext(ctx, warehouse, query, args...); err != nil {
 		return warehouseWriteError(err)
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 // Delete soft-deletes an unused warehouse.

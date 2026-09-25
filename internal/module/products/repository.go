@@ -260,6 +260,25 @@ func (r *postgresRepository) CreateVariant(ctx context.Context, variant *Product
 
 	variant.ID = database.GenerateID()
 
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	var productID string
+	lockQuery := `
+		SELECT id
+		FROM PRODUCTS
+		WHERE id = $1
+			AND deleted_at IS NULL
+		FOR SHARE`
+	if err := tx.GetContext(ctx, &productID, lockQuery, variant.ProductID); err != nil {
+		return err
+	}
+
 	query := `
 		INSERT INTO PRODUCT_VARIANTS (
 			id,
@@ -283,16 +302,15 @@ func (r *postgresRepository) CreateVariant(ctx context.Context, variant *Product
 			updated_at,
 			deleted_at`
 
-	query, args, err := r.db.BindNamed(query, variant)
+	query, args, err := tx.BindNamed(query, variant)
 	if err != nil {
 		return err
 	}
-
-	if err := r.db.GetContext(ctx, variant, query, args...); err != nil {
+	if err := tx.GetContext(ctx, variant, query, args...); err != nil {
 		return err
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 // GetVariantByID returns a non-deleted product variant by ID for a product.
@@ -306,21 +324,24 @@ func (r *postgresRepository) GetVariantByID(
 
 	query := `
 		SELECT
-			id,
-			product_id,
-			sku,
-			name,
-			price,
-			stock,
-			unit,
-			status,
-			created_at,
-			updated_at,
-			deleted_at
-		FROM PRODUCT_VARIANTS
-		WHERE product_id = $1
-			AND id = $2
-			AND deleted_at IS NULL`
+			variant.id,
+			variant.product_id,
+			variant.sku,
+			variant.name,
+			variant.price,
+			variant.stock,
+			variant.unit,
+			variant.status,
+			variant.created_at,
+			variant.updated_at,
+			variant.deleted_at
+		FROM PRODUCT_VARIANTS AS variant
+		INNER JOIN PRODUCTS AS product
+			ON product.id = variant.product_id
+		WHERE product.id = $1
+			AND variant.id = $2
+			AND product.deleted_at IS NULL
+			AND variant.deleted_at IS NULL`
 
 	var variant ProductVariant
 	if err := r.db.GetContext(ctx, &variant, query, productID, id); err != nil {
@@ -339,26 +360,51 @@ func (r *postgresRepository) GetManyVariantsByProduct(
 		return nil, err
 	}
 
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	var lockedProductID string
+	lockQuery := `
+		SELECT id
+		FROM PRODUCTS
+		WHERE id = $1
+			AND deleted_at IS NULL
+		FOR SHARE`
+	if err := tx.GetContext(ctx, &lockedProductID, lockQuery, productID); err != nil {
+		return nil, err
+	}
+
 	query := `
 		SELECT
-			id,
-			product_id,
-			sku,
-			name,
-			price,
-			stock,
-			unit,
-			status,
-			created_at,
-			updated_at,
-			deleted_at
-		FROM PRODUCT_VARIANTS
-		WHERE product_id = $1
-			AND deleted_at IS NULL
-		ORDER BY created_at DESC, id`
+			variant.id,
+			variant.product_id,
+			variant.sku,
+			variant.name,
+			variant.price,
+			variant.stock,
+			variant.unit,
+			variant.status,
+			variant.created_at,
+			variant.updated_at,
+			variant.deleted_at
+		FROM PRODUCT_VARIANTS AS variant
+		INNER JOIN PRODUCTS AS product
+			ON product.id = variant.product_id
+		WHERE product.id = $1
+			AND product.deleted_at IS NULL
+			AND variant.deleted_at IS NULL
+		ORDER BY variant.created_at DESC, variant.id`
 
 	variants := make([]ProductVariant, 0)
-	if err := r.db.SelectContext(ctx, &variants, query, productID); err != nil {
+	if err := tx.SelectContext(ctx, &variants, query, productID); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
@@ -374,6 +420,25 @@ func (r *postgresRepository) UpdateVariant(
 		return errors.New("product variant must not be nil")
 	}
 	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	var productID string
+	lockQuery := `
+		SELECT id
+		FROM PRODUCTS
+		WHERE id = $1
+			AND deleted_at IS NULL
+		FOR SHARE`
+	if err := tx.GetContext(ctx, &productID, lockQuery, variant.ProductID); err != nil {
 		return err
 	}
 
@@ -402,16 +467,15 @@ func (r *postgresRepository) UpdateVariant(
 			updated_at,
 			deleted_at`
 
-	query, args, err := r.db.BindNamed(query, variant)
+	query, args, err := tx.BindNamed(query, variant)
 	if err != nil {
 		return err
 	}
-
-	if err := r.db.GetContext(ctx, variant, query, args...); err != nil {
+	if err := tx.GetContext(ctx, variant, query, args...); err != nil {
 		return err
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 // DeleteVariant soft-deletes a variant with no inventory state or history.
@@ -427,6 +491,17 @@ func (r *postgresRepository) DeleteVariant(ctx context.Context, productID, id st
 	defer func() {
 		_ = tx.Rollback()
 	}()
+
+	var lockedProductID string
+	productLockQuery := `
+		SELECT id
+		FROM PRODUCTS
+		WHERE id = $1
+			AND deleted_at IS NULL
+		FOR SHARE`
+	if err := tx.GetContext(ctx, &lockedProductID, productLockQuery, productID); err != nil {
+		return err
+	}
 
 	var stock int
 	lockQuery := `
