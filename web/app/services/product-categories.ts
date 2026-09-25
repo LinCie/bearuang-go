@@ -1,4 +1,9 @@
-import { api, type ApiResponse } from "~/services/api";
+import {
+  api,
+  apiResult,
+  type ApiResult,
+  type CommonApiErrorCode,
+} from "~/services/api";
 
 export type ProductCategoryStatus = "draft" | "active" | "inactive" | "archived";
 
@@ -21,47 +26,49 @@ export type ProductCategoryInput = {
   status: ProductCategoryStatus;
 };
 
-export async function getProductCategories(): Promise<ProductCategory[]> {
-  const response = await api
-    .get("product-categories/")
-    .json<ApiResponse<ProductCategory[]>>();
+export type ProductCategoryErrorCode =
+  | CommonApiErrorCode
+  | "unauthorized"
+  | "invalid_status"
+  | "not_found";
 
-  return response.data;
+export function getProductCategories(): Promise<
+  ApiResult<ProductCategory[], ProductCategoryErrorCode>
+> {
+  return apiResult<ProductCategory[], ProductCategoryErrorCode>(
+    api.get("product-categories/"),
+  );
 }
 
-export async function getProductCategory(id: string): Promise<ProductCategory> {
-  const response = await api
-    .get(`product-categories/${encodeURIComponent(id)}`)
-    .json<ApiResponse<ProductCategory>>();
-
-  return response.data;
+export function getProductCategory(
+  id: string,
+): Promise<ApiResult<ProductCategory, ProductCategoryErrorCode>> {
+  return apiResult<ProductCategory, ProductCategoryErrorCode>(
+    api.get(`product-categories/${encodeURIComponent(id)}`),
+  );
 }
 
-export async function createProductCategory(
+export function createProductCategory(
   input: ProductCategoryInput,
-): Promise<ProductCategory> {
-  const response = await api
-    .post("product-categories/", { json: input })
-    .json<ApiResponse<ProductCategory>>();
-
-  return response.data;
+): Promise<ApiResult<ProductCategory, ProductCategoryErrorCode>> {
+  return apiResult<ProductCategory, ProductCategoryErrorCode>(
+    api.post("product-categories/", { json: input }),
+  );
 }
 
-export async function updateProductCategory(
+export function updateProductCategory(
   id: string,
   input: ProductCategoryInput,
-): Promise<ProductCategory> {
-  const response = await api
-    .put(`product-categories/${encodeURIComponent(id)}`, { json: input })
-    .json<ApiResponse<ProductCategory>>();
-
-  return response.data;
+): Promise<ApiResult<ProductCategory, ProductCategoryErrorCode>> {
+  return apiResult<ProductCategory, ProductCategoryErrorCode>(
+    api.put(`product-categories/${encodeURIComponent(id)}`, { json: input }),
+  );
 }
 
-export async function deleteProductCategory(id: string): Promise<null> {
-  const response = await api
-    .delete(`product-categories/${encodeURIComponent(id)}`)
-    .json<ApiResponse<null>>();
-
-  return response.data;
+export function deleteProductCategory(
+  id: string,
+): Promise<ApiResult<null, ProductCategoryErrorCode>> {
+  return apiResult<null, ProductCategoryErrorCode>(
+    api.delete(`product-categories/${encodeURIComponent(id)}`),
+  );
 }

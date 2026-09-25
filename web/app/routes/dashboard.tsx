@@ -23,8 +23,14 @@ export default function DashboardRoute() {
     let cancelled = false;
 
     void refreshSession()
-      .then(() => {
-        if (!cancelled) setIsReady(true);
+      .then((result) => {
+        if (cancelled) return;
+        if (!result.ok || !result.data.authenticated) {
+          navigate("/login", { replace: true });
+          return;
+        }
+
+        setIsReady(true);
       })
       .catch(() => {
         if (!cancelled) navigate("/login", { replace: true });

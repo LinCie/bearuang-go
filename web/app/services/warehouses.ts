@@ -1,4 +1,9 @@
-import { api, type ApiResponse } from "~/services/api";
+import {
+  api,
+  apiResult,
+  type ApiResult,
+  type CommonApiErrorCode,
+} from "~/services/api";
 
 export type WarehouseStatus = "active" | "inactive" | "archived";
 
@@ -21,40 +26,52 @@ export type WarehouseInput = {
   status: WarehouseStatus;
 };
 
-export async function getWarehouses(): Promise<Warehouse[]> {
-  const response = await api.get("warehouses/").json<ApiResponse<Warehouse[]>>();
+export type WarehouseErrorCode =
+  | CommonApiErrorCode
+  | "unauthorized"
+  | "invalid_code"
+  | "invalid_name"
+  | "invalid_status"
+  | "duplicate_code"
+  | "warehouse_in_use"
+  | "warehouse_has_stock"
+  | "not_found";
 
-  return response.data;
+export function getWarehouses(): Promise<
+  ApiResult<Warehouse[], WarehouseErrorCode>
+> {
+  return apiResult<Warehouse[], WarehouseErrorCode>(api.get("warehouses/"));
 }
 
-export async function getWarehouse(id: string): Promise<Warehouse> {
-  const response = await api
-    .get(`warehouses/${encodeURIComponent(id)}`)
-    .json<ApiResponse<Warehouse>>();
-
-  return response.data;
+export function getWarehouse(
+  id: string,
+): Promise<ApiResult<Warehouse, WarehouseErrorCode>> {
+  return apiResult<Warehouse, WarehouseErrorCode>(
+    api.get(`warehouses/${encodeURIComponent(id)}`),
+  );
 }
 
-export async function createWarehouse(input: WarehouseInput): Promise<Warehouse> {
-  const response = await api
-    .post("warehouses/", { json: input })
-    .json<ApiResponse<Warehouse>>();
-
-  return response.data;
+export function createWarehouse(
+  input: WarehouseInput,
+): Promise<ApiResult<Warehouse, WarehouseErrorCode>> {
+  return apiResult<Warehouse, WarehouseErrorCode>(
+    api.post("warehouses/", { json: input }),
+  );
 }
 
-export async function updateWarehouse(id: string, input: WarehouseInput): Promise<Warehouse> {
-  const response = await api
-    .put(`warehouses/${encodeURIComponent(id)}`, { json: input })
-    .json<ApiResponse<Warehouse>>();
-
-  return response.data;
+export function updateWarehouse(
+  id: string,
+  input: WarehouseInput,
+): Promise<ApiResult<Warehouse, WarehouseErrorCode>> {
+  return apiResult<Warehouse, WarehouseErrorCode>(
+    api.put(`warehouses/${encodeURIComponent(id)}`, { json: input }),
+  );
 }
 
-export async function deleteWarehouse(id: string): Promise<null> {
-  const response = await api
-    .delete(`warehouses/${encodeURIComponent(id)}`)
-    .json<ApiResponse<null>>();
-
-  return response.data;
+export function deleteWarehouse(
+  id: string,
+): Promise<ApiResult<null, WarehouseErrorCode>> {
+  return apiResult<null, WarehouseErrorCode>(
+    api.delete(`warehouses/${encodeURIComponent(id)}`),
+  );
 }

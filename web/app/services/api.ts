@@ -11,6 +11,7 @@ const refreshApi = ky.create({
 export const api = ky.create({
   baseUrl: apiBaseUrl,
   credentials: "include",
+  throwHttpErrors: false,
   retry: {
     limit: 1,
   },
@@ -47,8 +48,79 @@ export type ApiFieldError = {
   message: string;
 };
 
-export type ApiErrorResponse = {
-  code?: string;
-  message?: string;
+export type ApiErrorResponse<C extends string = string> = {
+  code: C;
+  message: string;
   fields?: ApiFieldError[];
 };
+
+export type ApiResult<T, C extends string = string> =
+  | {
+      ok: true;
+      data: T;
+    }
+  | {
+      ok: false;
+      status: number;
+      error: ApiErrorResponse<C>;
+    };
+
+export type ValidationErrorCode = `invalid_${string}`;
+
+export type CommonApiErrorCode =
+  | "invalid_body"
+  | "internal_error"
+  | ValidationErrorCode;
+
+export async function apiResult<T, C extends string = string>(
+  responsePromise: Promise<Response>,
+): Promise<ApiResult<T, C>> {
+  const response = await responsePromise;
+  const body: unknown = await response.json();
+
+  if (response.ok) {
+    if (!isRecord(body) || !("data" in body)) {
+      throw new TypeError("Invalid API success response: expected a data envelope");
+    }
+
+    const envelope = body as ApiResponse<T>;
+    return { ok: true, data: envelope.data };
+  }
+
+  if (!isApiErrorResponse(body)) {
+    throw new TypeError("Invalid API error response: expected code and message fields");
+  }
+
+  const error = body as ApiErrorResponse<C>;
+  return { ok: false, status: response.status, error };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isApiErrorResponse(value: unknown): value is Record<string, unknown> {
+  if (
+    !isRecord(value) ||
+    typeof value.code !== "string" ||
+    typeof value.message !== "string"
+  ) {
+    return false;
+  }
+
+  if (value.fields === undefined) {
+    return true;
+  }
+
+  return (
+    Array.isArray(value.fields) &&
+    value.fields.every(
+      (field) =>
+        isRecord(field) &&
+        typeof field.field === "string" &&
+        typeof field.rule === "string" &&
+        typeof field.message === "string" &&
+        (field.param === undefined || typeof field.param === "string"),
+    )
+  );
+}

@@ -1,4 +1,9 @@
-import { api, type ApiResponse } from "~/services/api";
+import {
+  api,
+  apiResult,
+  type ApiResult,
+  type CommonApiErrorCode,
+} from "~/services/api";
 
 export type ProductStatus = "draft" | "active" | "inactive" | "archived";
 export type ProductVariantStatus = "draft" | "active" | "inactive" | "archived";
@@ -43,100 +48,99 @@ export type ProductVariantInput = {
   status: ProductVariantStatus;
 };
 
-export async function getProducts(): Promise<Product[]> {
-  const response = await api.get("products/").json<ApiResponse<Product[]>>();
+export type ProductErrorCode =
+  | CommonApiErrorCode
+  | "unauthorized"
+  | "invalid_status"
+  | "product_in_use"
+  | "not_found";
 
-  return response.data;
+export type ProductVariantErrorCode =
+  | CommonApiErrorCode
+  | "unauthorized"
+  | "invalid_status"
+  | "variant_in_use"
+  | "not_found";
+
+export function getProducts(): Promise<ApiResult<Product[], ProductErrorCode>> {
+  return apiResult<Product[], ProductErrorCode>(api.get("products/"));
 }
 
-export async function getProduct(id: string): Promise<Product> {
-  const response = await api
-    .get(`products/${encodeURIComponent(id)}`)
-    .json<ApiResponse<Product>>();
-
-  return response.data;
+export function getProduct(id: string): Promise<ApiResult<Product, ProductErrorCode>> {
+  return apiResult<Product, ProductErrorCode>(
+    api.get(`products/${encodeURIComponent(id)}`),
+  );
 }
 
-export async function createProduct(input: ProductInput): Promise<Product> {
-  const response = await api
-    .post("products/", { json: input })
-    .json<ApiResponse<Product>>();
-
-  return response.data;
+export function createProduct(
+  input: ProductInput,
+): Promise<ApiResult<Product, ProductErrorCode>> {
+  return apiResult<Product, ProductErrorCode>(api.post("products/", { json: input }));
 }
 
-export async function updateProduct(id: string, input: ProductInput): Promise<Product> {
-  const response = await api
-    .put(`products/${encodeURIComponent(id)}`, { json: input })
-    .json<ApiResponse<Product>>();
-
-  return response.data;
+export function updateProduct(
+  id: string,
+  input: ProductInput,
+): Promise<ApiResult<Product, ProductErrorCode>> {
+  return apiResult<Product, ProductErrorCode>(
+    api.put(`products/${encodeURIComponent(id)}`, { json: input }),
+  );
 }
 
-export async function deleteProduct(id: string): Promise<null> {
-  const response = await api
-    .delete(`products/${encodeURIComponent(id)}`)
-    .json<ApiResponse<null>>();
-
-  return response.data;
+export function deleteProduct(id: string): Promise<ApiResult<null, ProductErrorCode>> {
+  return apiResult<null, ProductErrorCode>(
+    api.delete(`products/${encodeURIComponent(id)}`),
+  );
 }
 
-export async function getProductVariants(productId: string): Promise<ProductVariant[]> {
-  const response = await api
-    .get(`products/${encodeURIComponent(productId)}/variants/`)
-    .json<ApiResponse<ProductVariant[]>>();
-
-  return response.data;
+export function getProductVariants(
+  productId: string,
+): Promise<ApiResult<ProductVariant[], ProductVariantErrorCode>> {
+  return apiResult<ProductVariant[], ProductVariantErrorCode>(
+    api.get(`products/${encodeURIComponent(productId)}/variants/`),
+  );
 }
 
-export async function getProductVariant(
+export function getProductVariant(
   productId: string,
   variantId: string,
-): Promise<ProductVariant> {
-  const response = await api
-    .get(
+): Promise<ApiResult<ProductVariant, ProductVariantErrorCode>> {
+  return apiResult<ProductVariant, ProductVariantErrorCode>(
+    api.get(
       `products/${encodeURIComponent(productId)}/variants/${encodeURIComponent(variantId)}`,
-    )
-    .json<ApiResponse<ProductVariant>>();
-
-  return response.data;
+    ),
+  );
 }
 
-export async function createProductVariant(
+export function createProductVariant(
   productId: string,
   input: ProductVariantInput,
-): Promise<ProductVariant> {
-  const response = await api
-    .post(`products/${encodeURIComponent(productId)}/variants/`, { json: input })
-    .json<ApiResponse<ProductVariant>>();
-
-  return response.data;
+): Promise<ApiResult<ProductVariant, ProductVariantErrorCode>> {
+  return apiResult<ProductVariant, ProductVariantErrorCode>(
+    api.post(`products/${encodeURIComponent(productId)}/variants/`, { json: input }),
+  );
 }
 
-export async function updateProductVariant(
+export function updateProductVariant(
   productId: string,
   variantId: string,
   input: ProductVariantInput,
-): Promise<ProductVariant> {
-  const response = await api
-    .put(
+): Promise<ApiResult<ProductVariant, ProductVariantErrorCode>> {
+  return apiResult<ProductVariant, ProductVariantErrorCode>(
+    api.put(
       `products/${encodeURIComponent(productId)}/variants/${encodeURIComponent(variantId)}`,
       { json: input },
-    )
-    .json<ApiResponse<ProductVariant>>();
-
-  return response.data;
+    ),
+  );
 }
 
-export async function deleteProductVariant(
+export function deleteProductVariant(
   productId: string,
   variantId: string,
-): Promise<null> {
-  const response = await api
-    .delete(
+): Promise<ApiResult<null, ProductVariantErrorCode>> {
+  return apiResult<null, ProductVariantErrorCode>(
+    api.delete(
       `products/${encodeURIComponent(productId)}/variants/${encodeURIComponent(variantId)}`,
-    )
-    .json<ApiResponse<null>>();
-
-  return response.data;
+    ),
+  );
 }

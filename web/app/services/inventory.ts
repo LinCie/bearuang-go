@@ -1,4 +1,9 @@
-import { api, type ApiResponse } from "~/services/api";
+import {
+  api,
+  apiResult,
+  type ApiResult,
+  type CommonApiErrorCode,
+} from "~/services/api";
 
 export type InventoryBalance = {
   warehouse_id: string;
@@ -41,51 +46,58 @@ export type AdjustmentInput = {
   note: string;
 };
 
-export async function getInventoryBalances(
-  filters?: InventoryFilters,
-): Promise<InventoryBalance[]> {
-  const response = await api
-    .get("inventory/balances/", { searchParams: filters })
-    .json<ApiResponse<InventoryBalance[]>>();
+export type InventoryErrorCode =
+  | CommonApiErrorCode
+  | "unauthorized"
+  | "invalid_type"
+  | "invalid_quantity"
+  | "invalid_warehouse_id"
+  | "invalid_variant_id"
+  | "warehouse_not_found"
+  | "warehouse_not_active"
+  | "variant_not_found"
+  | "insufficient_stock"
+  | "not_found";
 
-  return response.data;
+export function getInventoryBalances(
+  filters?: InventoryFilters,
+): Promise<ApiResult<InventoryBalance[], InventoryErrorCode>> {
+  return apiResult<InventoryBalance[], InventoryErrorCode>(
+    api.get("inventory/balances/", { searchParams: filters }),
+  );
 }
 
-export async function getInventoryBalance(
+export function getInventoryBalance(
   warehouseId: string,
   variantId: string,
-): Promise<InventoryBalance> {
-  const response = await api
-    .get(
+): Promise<ApiResult<InventoryBalance, InventoryErrorCode>> {
+  return apiResult<InventoryBalance, InventoryErrorCode>(
+    api.get(
       `inventory/balances/${encodeURIComponent(warehouseId)}/${encodeURIComponent(variantId)}`,
-    )
-    .json<ApiResponse<InventoryBalance>>();
-
-  return response.data;
+    ),
+  );
 }
 
-export async function adjustInventory(input: AdjustmentInput): Promise<InventoryAdjustment> {
-  const response = await api
-    .post("inventory/adjustments/", { json: input })
-    .json<ApiResponse<InventoryAdjustment>>();
-
-  return response.data;
+export function adjustInventory(
+  input: AdjustmentInput,
+): Promise<ApiResult<InventoryAdjustment, InventoryErrorCode>> {
+  return apiResult<InventoryAdjustment, InventoryErrorCode>(
+    api.post("inventory/adjustments/", { json: input }),
+  );
 }
 
-export async function getInventoryMovements(
+export function getInventoryMovements(
   filters?: InventoryFilters,
-): Promise<StockMovement[]> {
-  const response = await api
-    .get("inventory/movements/", { searchParams: filters })
-    .json<ApiResponse<StockMovement[]>>();
-
-  return response.data;
+): Promise<ApiResult<StockMovement[], InventoryErrorCode>> {
+  return apiResult<StockMovement[], InventoryErrorCode>(
+    api.get("inventory/movements/", { searchParams: filters }),
+  );
 }
 
-export async function getInventoryMovement(id: string): Promise<StockMovement> {
-  const response = await api
-    .get(`inventory/movements/${encodeURIComponent(id)}`)
-    .json<ApiResponse<StockMovement>>();
-
-  return response.data;
+export function getInventoryMovement(
+  id: string,
+): Promise<ApiResult<StockMovement, InventoryErrorCode>> {
+  return apiResult<StockMovement, InventoryErrorCode>(
+    api.get(`inventory/movements/${encodeURIComponent(id)}`),
+  );
 }

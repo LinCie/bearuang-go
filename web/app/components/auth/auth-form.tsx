@@ -18,7 +18,11 @@ import { Button } from "~/components/ui/button";
 import { Field, FieldContent, FieldError } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { getAuthRequestError, login, register } from "~/services/auth";
+import {
+  login,
+  register,
+  type AuthErrorCode,
+} from "~/services/auth";
 
 import { AuthShell } from "./auth-shell";
 import {
@@ -27,12 +31,6 @@ import {
 } from "./bear-companion";
 
 type AuthMode = "login" | "register";
-
-type AuthValues = {
-  email: string;
-  password: string;
-  confirmPassword: string;
-};
 
 const emailSchema = z
   .string()
@@ -56,6 +54,19 @@ const registerSchema = z
     message: "Kata sandi belum sama.",
     path: ["confirmPassword"],
   });
+
+function getAuthErrorMessage(code: AuthErrorCode) {
+  switch (code) {
+    case "invalid_credentials":
+      return "Email atau kata sandi tidak cocok. Periksa kembali lalu coba lagi.";
+    case "email_exists":
+      return "Email ini sudah terdaftar. Coba masuk atau gunakan email lain.";
+    case "invalid_refresh_token":
+      return "Sesi tidak valid. Silakan masuk kembali.";
+    default:
+      return "Permintaan belum dapat diproses. Periksa kembali data Anda lalu coba lagi.";
+  }
+}
 
 function getFieldError(errors: unknown[]) {
   const [firstError] = errors;
@@ -100,29 +111,33 @@ function AuthForm({ mode }: { mode: AuthMode }) {
 
       try {
         if (isRegister) {
-          await register({
+          const result = await register({
             email: value.email.trim(),
             password: value.password,
           });
+          if (!result.ok) {
+            setRequestError(getAuthErrorMessage(result.error.code));
+            return;
+          }
+
           navigate("/login?registered=1", { replace: true });
           return;
         }
 
-        await login({
+        const result = await login({
           email: value.email.trim(),
           password: value.password,
         });
-        navigate("/dashboard");
-      } catch (error) {
-        const request = await getAuthRequestError(error);
-        const message =
-          request.code === "invalid_credentials"
-            ? "Email atau kata sandi tidak cocok. Periksa kembali lalu coba lagi."
-            : request.code === "email_exists"
-              ? "Email ini sudah terdaftar. Coba masuk atau gunakan email lain."
-              : request.message;
+        if (!result.ok) {
+          setRequestError(getAuthErrorMessage(result.error.code));
+          return;
+        }
 
-        setRequestError(message);
+        navigate("/dashboard");
+      } catch {
+        setRequestError(
+          "Tidak dapat terhubung ke Bearuang. Periksa koneksi Anda lalu coba lagi.",
+        );
       }
     },
   });

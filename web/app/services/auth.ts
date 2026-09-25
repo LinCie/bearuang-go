@@ -1,10 +1,8 @@
-import { HTTPError } from "ky";
-
 import {
   api,
-  type ApiErrorResponse,
-  type ApiFieldError,
-  type ApiResponse,
+  apiResult,
+  type ApiResult,
+  type CommonApiErrorCode,
 } from "~/services/api";
 
 export type Credentials = {
@@ -23,53 +21,32 @@ export type AuthSession = {
   authenticated: boolean;
 };
 
-export type AuthRequestError = {
-  code: string;
-  message: string;
-  fields?: ApiFieldError[];
-};
+export type AuthErrorCode =
+  | CommonApiErrorCode
+  | "email_exists"
+  | "invalid_credentials"
+  | "invalid_refresh_token";
 
-export async function register(credentials: Credentials): Promise<AuthUser> {
-  const response = await api
-    .post("auth/register", { json: credentials })
-    .json<ApiResponse<AuthUser>>();
-
-  return response.data;
+export function register(
+  credentials: Credentials,
+): Promise<ApiResult<AuthUser, AuthErrorCode>> {
+  return apiResult<AuthUser, AuthErrorCode>(
+    api.post("auth/register", { json: credentials }),
+  );
 }
 
-export async function login(credentials: Credentials): Promise<AuthSession> {
-  const response = await api
-    .post("auth/login", { json: credentials })
-    .json<ApiResponse<AuthSession>>();
-
-  return response.data;
+export function login(
+  credentials: Credentials,
+): Promise<ApiResult<AuthSession, AuthErrorCode>> {
+  return apiResult<AuthSession, AuthErrorCode>(
+    api.post("auth/login", { json: credentials }),
+  );
 }
 
-export async function refreshSession(): Promise<AuthSession> {
-  const response = await api.post("auth/refresh").json<ApiResponse<AuthSession>>();
-
-  return response.data;
+export function refreshSession(): Promise<ApiResult<AuthSession, AuthErrorCode>> {
+  return apiResult<AuthSession, AuthErrorCode>(api.post("auth/refresh"));
 }
 
-export async function logout(): Promise<AuthSession> {
-  const response = await api.post("auth/logout").json<ApiResponse<AuthSession>>();
-
-  return response.data;
-}
-
-export async function getAuthRequestError(error: unknown): Promise<AuthRequestError> {
-  if (!(error instanceof HTTPError)) {
-    return {
-      code: "network_error",
-      message: "Tidak dapat terhubung ke Bearuang. Periksa koneksi Anda lalu coba lagi.",
-    };
-  }
-
-  const response = (await error.response.clone().json().catch(() => null)) as ApiErrorResponse | null;
-
-  return {
-    code: response?.code ?? "request_failed",
-    message: response?.message ?? "Permintaan belum dapat diproses. Coba lagi.",
-    fields: response?.fields,
-  };
+export function logout(): Promise<ApiResult<AuthSession, AuthErrorCode>> {
+  return apiResult<AuthSession, AuthErrorCode>(api.post("auth/logout"));
 }
