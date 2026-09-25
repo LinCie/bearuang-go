@@ -6,7 +6,7 @@ import { useNavigate } from "react-router";
 import type { Route } from "./+types/dashboard";
 import { BearMark } from "~/components/brand/bear-mark";
 import { Button } from "~/components/ui/button";
-import { logout, refreshSession } from "~/lib/auth";
+import { logout, refreshSession } from "~/services/auth";
 
 export function meta({}: Route.MetaArgs) {
   return [

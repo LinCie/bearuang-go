@@ -40,7 +40,15 @@ export type ApiResponse<T> = {
   data: T;
 };
 
+export type ApiFieldError = {
+  field: string;
+  rule: string;
+  param?: string;
+  message: string;
+};
+
 export type ApiErrorResponse = {
   code?: string;
   message?: string;
+  fields?: ApiFieldError[];
 };

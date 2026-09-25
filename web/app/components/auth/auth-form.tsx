@@ -18,7 +18,7 @@ import { Button } from "~/components/ui/button";
 import { Field, FieldContent, FieldError } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { getAuthRequestError, login, register } from "~/lib/auth";
+import { getAuthRequestError, login, register } from "~/services/auth";
 
 import { AuthShell } from "./auth-shell";
 import {
