@@ -49,6 +49,7 @@ export type AdjustmentInput = {
 export type InventoryErrorCode =
   | CommonApiErrorCode
   | "unauthorized"
+  | "invalid_id"
   | "invalid_type"
   | "invalid_quantity"
   | "invalid_warehouse_id"

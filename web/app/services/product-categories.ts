@@ -29,6 +29,9 @@ export type ProductCategoryInput = {
 export type ProductCategoryErrorCode =
   | CommonApiErrorCode
   | "unauthorized"
+  | "invalid_id"
+  | "invalid_name"
+  | "invalid_slug"
   | "invalid_status"
   | "not_found";
 

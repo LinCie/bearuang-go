@@ -18,6 +18,7 @@ import { Button } from "~/components/ui/button";
 import { Field, FieldContent, FieldError } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { isApiProtocolError } from "~/services/api";
 import {
   login,
   register,
@@ -134,7 +135,12 @@ function AuthForm({ mode }: { mode: AuthMode }) {
         }
 
         navigate("/dashboard");
-      } catch {
+      } catch (error) {
+        if (isApiProtocolError(error)) {
+          setRequestError("Permintaan belum dapat diproses. Coba lagi.");
+          return;
+        }
+
         setRequestError(
           "Tidak dapat terhubung ke Bearuang. Periksa koneksi Anda lalu coba lagi.",
         );

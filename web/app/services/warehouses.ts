@@ -29,6 +29,7 @@ export type WarehouseInput = {
 export type WarehouseErrorCode =
   | CommonApiErrorCode
   | "unauthorized"
+  | "invalid_id"
   | "invalid_code"
   | "invalid_name"
   | "invalid_status"

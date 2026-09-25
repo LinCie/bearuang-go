@@ -23,6 +23,8 @@ export type AuthSession = {
 
 export type AuthErrorCode =
   | CommonApiErrorCode
+  | "invalid_email"
+  | "invalid_password"
   | "email_exists"
   | "invalid_credentials"
   | "invalid_refresh_token";

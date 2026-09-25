@@ -65,22 +65,33 @@ export type ApiResult<T, C extends string = string> =
       error: ApiErrorResponse<C>;
     };
 
-export type ValidationErrorCode = `invalid_${string}`;
+export type CommonApiErrorCode = "invalid_body" | "internal_error";
 
-export type CommonApiErrorCode =
-  | "invalid_body"
-  | "internal_error"
-  | ValidationErrorCode;
+export class ApiProtocolError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ApiProtocolError";
+  }
+}
+
+export function isApiProtocolError(error: unknown): error is ApiProtocolError {
+  return error instanceof ApiProtocolError;
+}
 
 export async function apiResult<T, C extends string = string>(
   responsePromise: Promise<Response>,
 ): Promise<ApiResult<T, C>> {
   const response = await responsePromise;
-  const body: unknown = await response.json();
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    throw new ApiProtocolError("Invalid API response: expected valid JSON");
+  }
 
   if (response.ok) {
     if (!isRecord(body) || !("data" in body)) {
-      throw new TypeError("Invalid API success response: expected a data envelope");
+      throw new ApiProtocolError("Invalid API success response: expected a data envelope");
     }
 
     const envelope = body as ApiResponse<T>;
@@ -88,7 +99,7 @@ export async function apiResult<T, C extends string = string>(
   }
 
   if (!isApiErrorResponse(body)) {
-    throw new TypeError("Invalid API error response: expected code and message fields");
+    throw new ApiProtocolError("Invalid API error response: expected code and message fields");
   }
 
   const error = body as ApiErrorResponse<C>;

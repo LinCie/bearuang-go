@@ -51,6 +51,9 @@ export type ProductVariantInput = {
 export type ProductErrorCode =
   | CommonApiErrorCode
   | "unauthorized"
+  | "invalid_id"
+  | "invalid_name"
+  | "invalid_slug"
   | "invalid_status"
   | "product_in_use"
   | "not_found";
@@ -58,6 +61,11 @@ export type ProductErrorCode =
 export type ProductVariantErrorCode =
   | CommonApiErrorCode
   | "unauthorized"
+  | "invalid_product_id"
+  | "invalid_variant_id"
+  | "invalid_sku"
+  | "invalid_name"
+  | "invalid_unit"
   | "invalid_status"
   | "variant_in_use"
   | "not_found";
